@@ -94,7 +94,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 
 
 /* ---- Bild House (low-poly) HUD ---- */
-#res{position:absolute;left:10px;top:calc(10px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:4px;max-width:min(430px,56vw);pointer-events:none}
+#res{position:absolute;left:10px;top:calc(10px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:4px;max-width:calc(50vw - 125px);pointer-events:none}
 #res span{background:#000a;border:2px solid #ffffff33;border-radius:4px;padding:2px 7px;font-weight:800;font-size:13px;display:flex;gap:4px;align-items:center}
 #clock{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);background:#000a;border:2px solid #ffffff33;border-radius:12px;padding:3px 12px;font-weight:800;font-size:13px;white-space:nowrap}
 #bars{position:absolute;left:50%;bottom:calc(var(--ts,56px) + 22px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(340px,86vw);display:flex;flex-direction:column;gap:3px}
@@ -240,7 +240,7 @@ function glInit(canvas) {
   const V = '#version 300 es\nprecision highp float;\nprecision highp sampler2DShadow;\n';
   const MVBODY = `layout(location=0) in vec3 a_pos; layout(location=1) in vec3 a_nrm; layout(location=2) in vec4 a_col; layout(location=3) in vec4 i_a; layout(location=4) in vec4 i_b; uniform float u_time;
 vec3 worldPos(out vec3 n){ float c=cos(i_a.w), s=sin(i_a.w); vec3 p=a_pos*i_b.x; vec3 q=vec3(c*p.x+s*p.z,p.y,-s*p.x+c*p.z); n=vec3(c*a_nrm.x+s*a_nrm.z,a_nrm.y,-s*a_nrm.x+c*a_nrm.z); vec3 w=q+i_a.xyz; w.x+=i_b.z*max(p.y,0.0)*0.012*sin(u_time*1.4+i_a.x*0.6+i_a.z*0.8); w.z+=i_b.z*max(p.y,0.0)*0.01*cos(u_time*1.1+i_a.z*0.7); return w; }`;
-  const MV = V + MVBODY + `uniform mat4 u_vp; uniform vec3 u_cam; out vec3 v_col; out vec3 v_n; out vec3 v_w; out float v_e; void main(){ vec3 n; vec3 w=worldPos(n); v_w=w-u_cam; v_col=a_col.rgb*i_b.y; v_n=n; v_e=a_col.a; gl_Position=u_vp*vec4(v_w,1.0); }`;
+  const MV = V + MVBODY + `uniform mat4 u_vp; uniform vec3 u_cam; out vec3 v_col; out vec3 v_n; out vec3 v_w; out float v_e; out float v_h; void main(){ vec3 n; vec3 w=worldPos(n); vec2 hk=(abs(i_a.x)+abs(i_a.z)<0.001)?floor(w.xz/6.0):i_a.xz; v_h=fract(sin(dot(hk,vec2(12.9898,78.233)))*43758.5453); v_w=w-u_cam; v_col=a_col.rgb*i_b.y; v_n=n; v_e=a_col.a; gl_Position=u_vp*vec4(v_w,1.0); }`;
   const LIGHTF = `uniform vec3 u_L; uniform vec3 u_sunC; uniform vec3 u_hs; uniform vec3 u_hg; uniform vec3 u_F; uniform vec3 u_fc; uniform float u_exp; uniform vec3 u_fogC; uniform vec2 u_fog; uniform vec3 u_lp[8]; uniform vec3 u_lc[8]; uniform float u_nl; uniform float u_tint; uniform vec3 u_cam; uniform mat4 u_lvp; uniform float u_shOn; uniform highp sampler2DShadow u_shadow;
 float shadowAt(vec3 wp, vec3 n){ if(u_shOn<0.5) return 1.0; vec4 sc=u_lvp*vec4(wp+n*0.07,1.0); vec3 p=sc.xyz*0.5+0.5; if(p.x<0.0||p.x>1.0||p.y<0.0||p.y>1.0||p.z>1.0) return 1.0; float ts=1.0/float(textureSize(u_shadow,0).x); float s=0.0; for(int i=-1;i<=1;i++) for(int j=-1;j<=1;j++) s+=texture(u_shadow,vec3(p.xy+vec2(float(i),float(j))*ts*1.15,p.z-0.0011)); s/=9.0; vec2 e=min(p.xy,1.0-p.xy); float edge=smoothstep(0.0,0.06,min(e.x,e.y)); return mix(1.0,s,edge); }
 vec3 aces(vec3 c){ c*=u_exp/0.6; mat3 inM=mat3(vec3(0.59719,0.07600,0.02840),vec3(0.35458,0.90834,0.13383),vec3(0.04823,0.01566,0.83777)); mat3 outM=mat3(vec3(1.60475,-0.10208,-0.00327),vec3(-0.53108,1.10813,-0.07276),vec3(-0.07367,-0.00605,1.07602)); c=inM*c; vec3 a=c*(c+0.0245786)-0.000090537; vec3 b=c*(0.983729*c+0.4329510)+0.238081; c=a/b; c=outM*c; return clamp(c,0.0,1.0); }
@@ -248,13 +248,19 @@ vec3 toSRGB(vec3 c){ return mix(c*12.92, 1.055*pow(c,vec3(1.0/2.4))-0.055, step(
 vec3 shade(vec3 col, vec3 n, vec3 w, float e){ vec3 wp=w+u_cam; float sh=shadowAt(wp,n); vec3 irr=mix(u_hg,u_hs,n.y*0.5+0.5)+u_sunC*max(dot(n,u_L),0.0)*sh+u_fc*max(dot(n,u_F),0.0); vec3 add=vec3(0.0);
  for(int i=0;i<8;i++){ if(float(i)>=u_nl) break; vec3 dv=u_lp[i]-w; float dist=length(dv); float rad=u_lc[i].x; float att=clamp(1.0-dist/rad,0.0,1.0); att*=att; float nd=0.45+0.55*max(dot(n,dv/max(dist,0.01)),0.0); add+=vec3(1.0,0.72,0.38)*att*nd*u_lc[i].y*1.2; }
  vec3 lin=col*(irr+add); lin=mix(lin,col*1.35,e); vec3 o=toSRGB(aces(lin)); float f=clamp((length(w)-u_fog.x)/(u_fog.y-u_fog.x),0.0,1.0); o=mix(o,u_fogC,f); return o*mix(vec3(1.0),vec3(0.6,0.8,1.0),u_tint); }`;
-  const UNI = 'u_vp u_cam u_time u_L u_sunC u_hs u_hg u_F u_fc u_exp u_fogC u_fog u_lp u_lc u_nl u_tint u_lvp u_shOn u_shadow u_alpha';
-  prog.mesh = mkProg(MV, V + LIGHTF + `in vec3 v_col; in vec3 v_n; in vec3 v_w; in float v_e; uniform float u_alpha; out vec4 o; void main(){ o=vec4(shade(v_col,normalize(v_n),v_w,v_e),u_alpha); }`, UNI);
+  const UNI = 'u_vp u_cam u_time u_L u_sunC u_hs u_hg u_F u_fc u_exp u_fogC u_fog u_lp u_lc u_nl u_tint u_lvp u_shOn u_shadow u_alpha u_sea u_snow u_ever u_seaOn u_aut u_terr';
+  prog.mesh = mkProg(MV, V + LIGHTF + `in vec3 v_col; in vec3 v_n; in vec3 v_w; in float v_e; in float v_h; uniform float u_alpha; uniform vec4 u_sea; uniform float u_snow; uniform float u_ever; uniform float u_seaOn; uniform float u_aut; uniform float u_terr; out vec4 o;
+vec3 seasonize(vec3 c, vec3 n, float h){ if(u_seaOn<0.5) return c; float lum=dot(c,vec3(0.33,0.5,0.17)); float gr=smoothstep(0.03,0.14,c.g-max(c.r,c.b*0.85)); vec3 tgt=u_sea.rgb;
+ if(u_aut>0.01){ if(u_terr>0.5){ tgt=mix(vec3(0.66,0.54,0.26),vec3(0.55,0.4,0.2),h); } else { vec3 lf=mix(vec3(0.95,0.62,0.12),vec3(0.8,0.22,0.1),h); if(h>0.78) lf=vec3(0.92,0.8,0.22); tgt=mix(u_sea.rgb,lf,u_aut); } }
+ float k=gr*u_sea.a*mix(1.0,0.22,u_ever); c=mix(c,tgt*(0.5+lum),clamp(k,0.0,1.0));
+ float up=smoothstep(0.5,0.86,n.y); float sn=u_snow*max(up,u_ever*0.4*smoothstep(0.1,0.5,n.y)); if(u_terr>0.5) sn=u_snow*smoothstep(0.35,0.7,n.y);
+ return mix(c,vec3(0.94,0.96,1.0)*(0.9+0.15*lum),clamp(sn,0.0,1.0)*0.93); }
+void main(){ vec3 n=normalize(v_n); o=vec4(shade(seasonize(v_col,n,v_h),n,v_w,v_e),u_alpha); }`, UNI);
   prog.depth = mkProg(V + MVBODY + `uniform mat4 u_lvp; void main(){ vec3 n; vec3 w=worldPos(n); gl_Position=u_lvp*vec4(w,1.0); }`, V + `out vec4 o; void main(){ o=vec4(1.0); }`, 'u_lvp u_time');
   prog.water = mkProg(V + `layout(location=0) in vec2 a_p; uniform mat4 u_vp; uniform vec3 u_cam; uniform float u_lvl; uniform vec2 u_org; out vec3 v_w; void main(){ vec3 w=vec3(a_p.x+u_org.x,u_lvl,a_p.y+u_org.y); v_w=w-u_cam; gl_Position=u_vp*vec4(v_w,1.0); }`,
-    V + LIGHTF + `uniform float u_time; in vec3 v_w; out vec4 o; void main(){ vec3 wp=v_w+u_cam; float w1=sin(wp.x*1.7+u_time*1.3)+sin(wp.z*1.3-u_time*1.1)+sin((wp.x+wp.z)*0.9+u_time*0.7); vec3 n=normalize(vec3(cos(wp.x*1.7+u_time*1.3)*0.06,1.0,cos(wp.z*1.3-u_time*1.1)*0.06)); vec3 base=vec3(0.21,0.58,0.82)*(0.92+0.08*w1/3.0); vec3 view=normalize(v_w); float fr=pow(1.0-abs(dot(view,vec3(0.0,1.0,0.0))),3.0);
+    V + LIGHTF + `uniform float u_time; uniform float u_snow; in vec3 v_w; out vec4 o; void main(){ vec3 wp=v_w+u_cam; float w1=sin(wp.x*1.7+u_time*1.3)+sin(wp.z*1.3-u_time*1.1)+sin((wp.x+wp.z)*0.9+u_time*0.7); vec3 n=normalize(vec3(cos(wp.x*1.7+u_time*1.3)*0.06,1.0,cos(wp.z*1.3-u_time*1.1)*0.06)); vec3 base=vec3(0.21,0.58,0.82)*(0.92+0.08*w1/3.0); vec3 view=normalize(v_w); float fr=pow(1.0-abs(dot(view,vec3(0.0,1.0,0.0))),3.0);
  vec3 irr=mix(u_hg,u_hs,0.8)+u_sunC*0.55; vec3 lin=base*irr; vec3 sky=u_hs*0.9; lin=mix(lin,sky,fr*0.45); float spec=pow(max(dot(reflect(-u_L,n),-view),0.0),70.0); lin+=u_sunC*spec*0.35;
- vec3 col=toSRGB(aces(lin)); float f=clamp((length(v_w)-u_fog.x)/(u_fog.y-u_fog.x),0.0,1.0); col=mix(col,u_fogC,f); o=vec4(col*mix(vec3(1.0),vec3(0.6,0.8,1.0),u_tint),0.82); }`, UNI.replace('u_alpha', 'u_lvl u_org'));
+ vec3 col=mix(toSRGB(aces(lin)),vec3(0.85,0.92,0.98),u_snow*0.55); float f=clamp((length(v_w)-u_fog.x)/(u_fog.y-u_fog.x),0.0,1.0); col=mix(col,u_fogC,f); o=vec4(col*mix(vec3(1.0),vec3(0.6,0.8,1.0),u_tint),0.82); }`, UNI.replace('u_alpha', 'u_lvl u_org'));
   prog.sky = mkProg(V + `out vec2 v_p; void main(){ vec2 q=vec2((gl_VertexID<<1)&2,gl_VertexID&2); v_p=q*2.0-1.0; gl_Position=vec4(v_p,0.9999,1.0); }`,
     V + `uniform mat3 u_rot; uniform vec2 u_proj; uniform vec3 u_sunD; uniform float u_night; uniform float u_time; uniform vec3 u_tintK; uniform float u_exp; in vec2 v_p; out vec4 o;
 float h3(vec3 p){ p=fract(p*0.3183099+0.1); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
@@ -285,11 +291,14 @@ function sunMatrix(cx, cy, cz) {
 }
 function setLightUniforms(P, fc, tint, shOn) {
   const u = P.u, Lg = LIGHT; const mulC = (c, k) => [c[0] * k, c[1] * k, c[2] * k]; gl.uniform3fv(u.u_L, BS.L); gl.uniform3fv(u.u_sunC, mulC(Lg.sunC, Lg.sunI)); gl.uniform3fv(u.u_hs, mulC(BS.hemiSky, Lg.hemiI)); gl.uniform3fv(u.u_hg, mulC(BS.hemiGnd, Lg.hemiI)); gl.uniform3fv(u.u_F, BS.F); gl.uniform3fv(u.u_fc, mulC(BS.fill, Lg.fillI)); gl.uniform1f(u.u_exp, Lg.exposure);
-  gl.uniform3fv(u.u_fogC, fc); gl.uniform2f(u.u_fog, fogN, fogE); gl.uniform1f(u.u_tint, tint); const n = Math.min(8, LIGHTS.length); for (let i = 0; i < 8; i++) { const Lq = LIGHTS[i]; if (Lq) { LPOS[i * 3] = Lq.x - cam.x; LPOS[i * 3 + 1] = Lq.y - cam.y; LPOS[i * 3 + 2] = Lq.z - cam.z; LCOL[i * 3] = Lq.rad; LCOL[i * 3 + 1] = Lq.k; LCOL[i * 3 + 2] = 0; } } gl.uniform3fv(u.u_lp, LPOS.subarray(0, 24)); gl.uniform3fv(u.u_lc, LCOL.subarray(0, 24)); gl.uniform1f(u.u_nl, n);
+  gl.uniform3fv(u.u_fogC, fc); gl.uniform2f(u.u_fog, fogN, fogE); gl.uniform1f(u.u_tint, tint); gl.uniform1f(u.u_snow, SEA.snow); const n = Math.min(8, LIGHTS.length); for (let i = 0; i < 8; i++) { const Lq = LIGHTS[i]; if (Lq) { LPOS[i * 3] = Lq.x - cam.x; LPOS[i * 3 + 1] = Lq.y - cam.y; LPOS[i * 3 + 2] = Lq.z - cam.z; LCOL[i * 3] = Lq.rad; LCOL[i * 3 + 1] = Lq.k; LCOL[i * 3 + 2] = 0; } } gl.uniform3fv(u.u_lp, LPOS.subarray(0, 24)); gl.uniform3fv(u.u_lc, LCOL.subarray(0, 24)); gl.uniform1f(u.u_nl, n);
   gl.uniform3f(u.u_cam, cam.x, cam.y, cam.z); if (SHD) { gl.uniformMatrix4fv(u.u_lvp, false, SHD.lvp); gl.uniform1f(u.u_shOn, shOn ? 1 : 0); gl.uniform1i(u.u_shadow, 1); }
 }
 let fogN = 70, fogE = 210;
-function drawMeshes(P) { for (const m of WORLDMESH) { if (m.visible === false) continue; gl.bindVertexArray(m.vao); gl.drawArrays(gl.TRIANGLES, 0, m.n); drawCalls++; } for (const m of INSTSETS) { if (!m.cnt) continue; gl.bindVertexArray(m.vao); gl.drawArraysInstanced(gl.TRIANGLES, 0, m.n, m.cnt); drawCalls++; } }
+function seaSet(P, kind) { const u = P.u; gl.uniform1f(u.u_seaOn, 1); let a = 0, tgt = SEA.leaf, ev = 0, terr = 0; if (kind === 'terr') { a = SEA.ta; tgt = SEA.terr; terr = 1; } else if (kind === 'decid') { a = SEA.la; } else if (kind === 'ever') { a = SEA.la; ev = 1; } gl.uniform4f(u.u_sea, tgt[0], tgt[1], tgt[2], a); gl.uniform1f(u.u_ever, ev); gl.uniform1f(u.u_aut, SEA.aut); gl.uniform1f(u.u_terr, terr); }
+function drawMeshes(P) { for (const k in SETS) if (!SETS[k].mesh.sname) SETS[k].mesh.sname = k; const cs = currentSeason();
+  for (const m of WORLDMESH) { if (m.visible === false) continue; seaSet(P, m === TERRAIN ? 'terr' : 'plain'); gl.bindVertexArray(m.vao); gl.drawArrays(gl.TRIANGLES, 0, m.n); drawCalls++; }
+  for (const m of INSTSETS) { if (!m.cnt) continue; const nm = m.sname || ''; if (nm.indexOf('flower') === 0 && (SEA.aut > 0.4 || SEA.snow > 0.2)) continue; if (nm === 'mush' && (cs === 1 || cs === 3)) continue; let kind = 'plain'; if (nm === 'oak' || nm === 'oak2' || nm === 'bush' || nm === 'grass') kind = 'decid'; else if (nm === 'pine' || nm === 'pine2') kind = 'ever'; seaSet(P, kind); gl.bindVertexArray(m.vao); gl.drawArraysInstanced(gl.TRIANGLES, 0, m.n, m.cnt); drawCalls++; } }
 function renderScene(dt, time) {
   const w = cvs.clientWidth, h = cvs.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2) * SET.scale; const pw = Math.max(2, Math.floor(w * dpr)), ph = Math.max(2, Math.floor(h * dpr)); if (cvs.width !== pw || cvs.height !== ph) { cvs.width = pw; cvs.height = ph; }
   glTime = time; drawCalls = 0; const asp = pw / ph, fovR = cam.fov * Math.PI / 180, R = M4.rot(cam.yaw, cam.pitch), proj = M4.persp(fovR, asp, 0.2, 700), vp = M4.mul(proj, R.m);
@@ -301,7 +310,7 @@ function renderScene(dt, time) {
   gl.disable(gl.DEPTH_TEST); gl.useProgram(prog.sky.p); let U = prog.sky.u, tanH = Math.tan(fovR / 2);
   gl.uniformMatrix3fv(U.u_rot, false, new Float32Array([R.r[0], R.r[1], R.r[2], R.u[0], R.u[1], R.u[2], -R.f[0], -R.f[1], -R.f[2]])); gl.uniform2f(U.u_proj, tanH * asp, tanH); gl.uniform3fv(U.u_sunD, BS.L); gl.uniform1f(U.u_night, SKYST.night); gl.uniform1f(U.u_time, time); gl.uniform3fv(U.u_tintK, SKYST.skyK); gl.uniform1f(U.u_exp, LIGHT.exposure); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.enable(gl.DEPTH_TEST);
   let P = prog.mesh; gl.useProgram(P.p); gl.uniformMatrix4fv(P.u.u_vp, false, vp); gl.uniform1f(P.u.u_time, time); gl.uniform1f(P.u.u_alpha, 1); gl.activeTexture(gl.TEXTURE1); if (SHD) gl.bindTexture(gl.TEXTURE_2D, SHD.tex); gl.activeTexture(gl.TEXTURE0); setLightUniforms(P, fc, tint, shOn);
-  drawMeshes(P); drawDyn(dynO);
+  drawMeshes(P); gl.uniform1f(P.u.u_seaOn, 0); drawDyn(dynO);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1f(P.u.u_alpha, 0.32); if (!shOn) drawDyn(dynE);
   const W_ = prog.water; gl.useProgram(W_.p); gl.uniformMatrix4fv(W_.u.u_vp, false, vp); gl.uniform1f(W_.u.u_time, time); setLightUniforms(W_, fc, tint, false); gl.bindVertexArray(waterVAO);
   for (const wt of WATERS) { gl.uniform1f(W_.u.u_lvl, wt.y); gl.uniform2f(W_.u.u_org, wt.x, wt.z); const sc = wt.r; gl.bindBuffer(gl.ARRAY_BUFFER, waterBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-sc, -sc, sc, -sc, sc, sc, -sc, -sc, sc, sc, -sc, sc]), gl.DYNAMIC_DRAW); gl.drawArrays(gl.TRIANGLES, 0, 6); drawCalls++; }
@@ -503,7 +512,7 @@ function startBuild(stage) { HS.stage = stage; HS.anim = { stage, t: 0, dur: sta
 function setHouseStageInstant(stage) { HS.stage = stage; HS.anim = null; }
 
 /* ====== DATA: resources, food, tools, recipes ====== */
-const RES = { wood: ['🪵', 'Drewno'], plank: ['🟫', 'Deski'], stone: ['🪨', 'Kamień'], brick: ['🧱', 'Cegły'], iron: ['⛓️', 'Żelazo'], coal: ['⬛', 'Węgiel'], clothL: ['👕', 'Lekki strój'], clothW: ['🧥', 'Ciepły strój'], clothH: ['🥻', 'Wiosenny strój'], torch: ['🔦', 'Pochodnie'], berry: ['🫐', 'Jagody'], mushroom: ['🍄', 'Grzyby'], fish: ['🐟', 'Surowa ryba'], fishC: ['🍤', 'Pieczona ryba'], meat: ['🥩', 'Surowe mięso'], meatC: ['🍖', 'Pieczone mięso'], veg: ['🥕', 'Warzywa'], stew: ['🍲', 'Gulasz'], journal: ['📔', 'Dziennik zwiadowcy'] };
+const RES = { wood: ['🪵', 'Drewno'], plank: ['🟫', 'Deski'], stone: ['🪨', 'Kamień'], brick: ['🧱', 'Cegły'], iron: ['⛓️', 'Żelazo'], coal: ['⬛', 'Węgiel'], clothL: ['👕', 'Lekki strój'], clothW: ['🧥', 'Ciepły strój'], hotdrink: ['🍵', 'Gorący napar'], clothH: ['🥻', 'Wiosenny strój'], clothA: ['🧣', 'Jesienny strój'], clothM: ['🌿', 'Strój moro'], bag: ['🎒', 'Większy plecak'], torch: ['🔦', 'Pochodnie'], berry: ['🫐', 'Jagody'], mushroom: ['🍄', 'Grzyby'], fish: ['🐟', 'Surowa ryba'], fishC: ['🍤', 'Pieczona ryba'], meat: ['🥩', 'Surowe mięso'], meatC: ['🍖', 'Pieczone mięso'], veg: ['🥕', 'Warzywa'], stew: ['🍲', 'Gulasz'], journal: ['📔', 'Dziennik zwiadowcy'] };
 const FOODV = { berry: 8, mushroom: 6, fish: 10, fishC: 30, meat: 12, meatC: 36, veg: 14, stew: 58, hotdrink: 24 };
 const TOOLN = { axe: ['Siekiera', ['', 'drewniana', 'kamienna', 'żelazna'], '🪓'], pick: ['Kilof', ['', 'drewniany', 'kamienny', 'żelazny'], '⛏️'], rod: ['Wędka', ['', 'zwykła'], '🎣'], spear: ['Włócznia', ['', 'drewniana'], '🔱'] };
 const TOOLP = { axe: [1, 2, 3.2, 4.6], pick: [0, 2, 3.4, 5], spear: [0, 26] }; // power per tier
@@ -514,7 +523,10 @@ const RCP = [
   { id: 'axe3', tool: ['axe', 3], i: { plank: 5, iron: 4 }, t: 'Żelazna siekiera', need: 6 }, { id: 'pick3', tool: ['pick', 3], i: { plank: 5, iron: 4 }, t: 'Żelazny kilof', need: 6 },
   { id: 'clothL', o: ['clothL', 1], i: { plank: 2, wood: 3 }, t: 'Lekki strój — chroni w lato i wiosnę (włóczka z kory)' },
   { id: 'clothW', o: ['clothW', 1], i: { plank: 4, iron: 2 }, t: 'Ciepły strój — ochrania w zimę i jesień (futro)' },
-  { id: 'clothH', o: ['clothH', 1], i: { plank: 2, veg: 2 }, t: 'Wiosenny strój — lekki, barwiony warzywami' }
+  { id: 'clothH', o: ['clothH', 1], i: { plank: 2, veg: 2 }, t: 'Wiosenny strój — lekki, barwiony warzywami' },
+  { id: 'clothA', o: ['clothA', 1], i: { plank: 3, wood: 2, mushroom: 1 }, t: 'Jesienny strój — wełniany, na chłodne dni' },
+  { id: 'clothM', o: ['clothM', 1], i: { plank: 3, veg: 2, mushroom: 2 }, t: 'Strój moro — wilki i zwierzęta widzą cię z bliska 🌿' },
+  { id: 'bag', o: ['bag', 1], i: { plank: 8, iron: 2, wood: 4 }, t: 'Większy plecak: +80 miejsca na surowce (max 2)' }
 ];
 const COOK = [{ id: 'fishC', from: 'fish', t: 'Upiecz rybę' }, { id: 'meatC', from: 'meat', t: 'Upiecz mięso' }, { id: 'stew', i: { meat: 1, veg: 1, mushroom: 1 }, t: 'Ugotuj gulasz (kuchnia w domu)', need: 5, kitchen: true },
   { id: 'hotdrink', i: { berry: 2 }, t: 'Gorący napar z jagód — szybko ogrzewa' }];
@@ -530,16 +542,28 @@ function addFire(x, y, z, big) { const f = { x, y, z, big: !!big, ph: Math.rando
 function drawFires(t) { for (const f of FIRES) { const dx = f.x - cam.x, dz = f.z - cam.z; if (dx * dx + dz * dz > 120 * 120) continue; const fl = 0.8 + 0.2 * Math.sin(t * 11 + f.ph) + 0.1 * Math.sin(t * 23 + f.ph * 2); for (let i = 0; i < 3; i++) { const h = (0.45 + i * 0.15) * fl * (f.big ? 1.3 : 1), w = (0.2 - i * 0.05) * (f.big ? 1.3 : 1); const m = mm(MT(f.x + Math.sin(t * 9 + i + f.ph) * 0.05, f.y + h / 2, f.z + Math.cos(t * 7 + i) * 0.05), MRY(t * 2 + i)); dynO.box(m, w, h / 2, w, i === 0 ? [1, 0.45, 0.1] : i === 1 ? [1, 0.7, 0.15] : [1, 0.95, 0.5], 1); } if (Math.random() < dtG * 6) PARTS.push({ x: f.x + (Math.random() - 0.5) * 0.3, y: f.y + 0.4, z: f.z + (Math.random() - 0.5) * 0.3, vx: (Math.random() - 0.5) * 0.3, vy: 1.2 + Math.random(), vz: (Math.random() - 0.5) * 0.3, life: 1.1, s: 0.06, c: [1, 0.7, 0.2], g: -0.2, e: 0 }); LIGHTS.push({ x: f.x, y: f.y + 0.8, z: f.z, rad: f.big ? 22 : 15, k: 0.7 + 0.5 * SKYST.night + 0.1 * Math.sin(t * 13 + f.ph) }); } }
 let dtG = 0.016;
 /* ----- humanoid model: identical to the Bow Shot character ----- */
+const OUTFITS = { clothW: { shirt: [0.78, 0.2, 0.2], arms: [0.78, 0.2, 0.2], pants: [0.25, 0.25, 0.32], big: 1, scarf: [0.95, 0.95, 0.98], hat: 'beanie' }, clothL: { shirt: [0.98, 0.95, 0.72], arms: null, pants: [0.35, 0.65, 0.9], shorts: 1, hat: 'straw' }, clothH: { shirt: [0.5, 0.82, 0.5], arms: [0.5, 0.82, 0.5], pants: [0.2, 0.3, 0.5], flower: 1 }, clothA: { shirt: [0.85, 0.5, 0.18], arms: [0.85, 0.5, 0.18], pants: [0.4, 0.28, 0.18], scarf: [0.7, 0.2, 0.15] }, clothM: { shirt: [0.33, 0.42, 0.22], arms: [0.33, 0.42, 0.22], pants: [0.3, 0.38, 0.2], camo: 1, hat: 'cap' } };
 const BS_SKIN = [1.0, 0.827, 0.302], BS_SHIRT = [0.31, 0.616, 1.0], BS_PANTS = [0.169, 0.227, 0.361], BS_EYE = [0.086, 0.129, 0.227];
 function drawHuman(x, y, z, yaw, anim, o) {
   const base = mm(MT(x, y, z), MRY(yaw)); const k = o.shade || 1; const sw = Math.sin(anim.t * 9) * anim.speed * 0.8; const bob = Math.abs(Math.cos(anim.t * 9)) * 0.04 * anim.speed;
   const swing = anim.swing > 0 ? -1.9 * Math.sin(anim.swing * 3.14) + 0.3 : null;
   const limb = (px, py, w, h, d, col, ang) => { const m = mm(mm(base, MT(px, py + bob, 0)), mm(MRX(ang), MT(0, -h / 2, 0))); dynO.box(m, w / 2, h / 2, d / 2, col, 0, k); return mm(mm(base, MT(px, py + bob, 0)), MRX(ang)); };
-  limb(-0.2, 0.75, 0.36, 0.75, 0.4, BS_PANTS, sw); limb(0.2, 0.75, 0.36, 0.75, 0.4, BS_PANTS, -sw);
-  limb(-0.55, 1.45, 0.3, 0.72, 0.36, BS_SKIN, -sw);
-  const armR = limb(0.55, 1.45, 0.3, 0.72, 0.36, BS_SKIN, swing !== null ? swing : sw);
+  const ft = OUTFITS[o.outfit] || null; const pantC = ft ? (ft.shorts ? BS_SKIN : ft.pants) : BS_PANTS, armC = ft && ft.arms ? ft.arms : BS_SKIN, shirtC = ft ? ft.shirt : (o.shirt || BS_SHIRT);
+  limb(-0.2, 0.75, 0.36, 0.75, 0.4, pantC, sw); limb(0.2, 0.75, 0.36, 0.75, 0.4, pantC, -sw);
+  limb(-0.55, 1.45, 0.3, 0.72, 0.36, armC, -sw);
+  const armR = limb(0.55, 1.45, 0.3, 0.72, 0.36, armC, swing !== null ? swing : sw);
   const box = (ox, oy, oz, w, h, d, c, e) => dynO.box(mm(base, MT(ox, oy + bob, oz)), w / 2, h / 2, d / 2, c, e || 0, k);
-  box(0, 1.12, 0, 0.8, 0.75, 0.42, o.shirt || BS_SHIRT); box(0, 1.78, 0, 0.55, 0.5, 0.5, BS_SKIN);
+  box(0, 1.12, 0, 0.8, 0.75, 0.42, shirtC); box(0, 1.78, 0, 0.55, 0.5, 0.5, BS_SKIN);
+  if (ft) {
+    if (ft.shorts) { const sh = (px, ang) => { const m = mm(mm(base, MT(px, 0.75 + bob, 0)), mm(MRX(ang), MT(0, -0.19, 0))); dynO.box(m, 0.19, 0.19, 0.21, ft.pants, 0, k); }; sh(-0.2, sw); sh(0.2, -sw); }
+    if (ft.big) box(0, 1.12, 0, 0.9, 0.8, 0.5, ft.shirt);
+    if (ft.scarf) box(0, 1.52, 0.02, 0.62, 0.14, 0.54, ft.scarf);
+    if (ft.hat === 'beanie') { box(0, 2.07, 0, 0.6, 0.18, 0.56, [0.95, 0.95, 0.98]); box(0, 2.2, 0, 0.14, 0.12, 0.14, [0.9, 0.3, 0.3]); }
+    if (ft.hat === 'straw') { box(0, 2.04, 0, 1.0, 0.05, 1.0, [0.93, 0.8, 0.4]); box(0, 2.11, 0, 0.52, 0.12, 0.52, [0.93, 0.8, 0.4]); box(0, 2.07, 0, 0.54, 0.04, 0.54, [0.8, 0.25, 0.2]); }
+    if (ft.hat === 'cap') { box(0, 2.06, -0.02, 0.6, 0.14, 0.56, [0.28, 0.36, 0.18]); box(0, 2.02, 0.32, 0.5, 0.04, 0.2, [0.22, 0.3, 0.14]); }
+    if (ft.flower) { box(0.22, 1.3, 0.22, 0.12, 0.12, 0.03, [1, 0.85, 0.2], 0.3); box(0.22, 1.3, 0.235, 0.05, 0.05, 0.03, [1, 0.4, 0.5], 0.3); }
+    if (ft.camo) { for (const q of [[-0.2, 1.3, 0.2, 0.18], [0.15, 1.0, 0.16, 0.22], [-0.1, 0.9, 0.14, 0.12], [0.26, 1.34, 0.12, 0.14], [-0.28, 1.0, 0.12, 0.2]]) { box(q[0], q[1], 0.22, q[2] * 2, q[3] * 1.6, 0.03, [0.17, 0.23, 0.11]); box(-q[0], q[1] - 0.1, -0.22, q[2] * 1.8, q[3] * 1.5, 0.03, [0.45, 0.38, 0.22]); } box(-0.4, 1.1, 0, 0.04, 0.3, 0.2, [0.17, 0.23, 0.11]); }
+  }
   box(-0.12, 1.82, 0.26, 0.08, 0.12, 0.02, BS_EYE, 0.3); box(0.12, 1.82, 0.26, 0.08, 0.12, 0.02, BS_EYE, 0.3); box(0, 1.68, 0.26, 0.22, 0.05, 0.02, BS_EYE, 0.3);
   if (o.tool) { const T_ = o.tool, hc = [0.5, 0.34, 0.18], m2 = mm(armR, mm(MT(0, -0.62, 0.22), MRX(0.75))); const th = (hx, hy, hz, ox, oy, oz, c, e) => dynO.box(mm(m2, MT(ox, oy, oz)), hx, hy, hz, c, e || 0, k);
     if (T_ === 'axe') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.17, 0.2, 0, 0.5, 0.1, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'pick') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.06, 0.34, 0, 0.55, 0, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'rod') { th(0.025, 0.7, 0.025, 0, 0.3, 0.1, hc); } else if (T_ === 'spear') { th(0.03, 0.85, 0.03, 0, 0.35, 0, hc); th(0.05, 0.14, 0.05, 0, 1.2, 0, [0.85, 0.85, 0.9]); } else if (T_ === 'torch') { th(0.035, 0.32, 0.035, 0, 0.15, 0, hc); th(0.08, 0.1, 0.08, 0, 0.5, 0, [1, 0.62, 0.15], 1); } }
@@ -550,7 +574,7 @@ function spawnAnimal(type, x, z) { const e = { type, x, z, y: heightAt(x, z), ya
 function initAnimals() { ANIMALS.length = 0; const rng = mulberry(WN.seed ^ 0xa11ce); for (let i = 0; i < 26; i++) { const a = rng() * 6.28, d = 30 + rng() * 95, x = Math.cos(a) * d, z = Math.sin(a) * d, h = heightAt(x, z); if (h < WR.waterY + 1 || h > 12) continue; spawnAnimal(i % 3 === 0 ? 'deer' : 'rabbit', x, z); } }
 function updateAnimals(dt) {
   for (const e of ANIMALS) { const dx = P.x - e.x, dz = P.z - e.z, d = Math.hypot(dx, dz); if (d > 150) continue; e.hurt = Math.max(0, e.hurt - dt); e.t -= dt; e.flee = Math.max(0, e.flee - dt); let wx = 0, wz = 0, sp = e.type === 'deer' ? 2.0 : 1.4;
-    if (d < (e.type === 'deer' ? 14 : 9) && !P.dead) { e.flee = 3.5; } if (e.flee > 0) { const l = d || 1; wx = -dx / l; wz = -dz / l; sp *= 3.6; e.yaw = Math.atan2(wx, wz); } else { if (e.t <= 0) { e.t = 2 + Math.random() * 4; e.mode = Math.random() < 0.5 ? Math.random() * 6.28 : -1; } if (e.mode >= 0) { wx = Math.sin(e.mode); wz = Math.cos(e.mode); e.yaw = e.mode; sp *= 0.6; } }
+    if (d < (e.type === 'deer' ? 14 : 9) * (P.worn === 'clothM' && P.inv.clothM > 0 ? 0.55 : 1) && !P.dead) { e.flee = 3.5; } if (e.flee > 0) { const l = d || 1; wx = -dx / l; wz = -dz / l; sp *= 3.6; e.yaw = Math.atan2(wx, wz); } else { if (e.t <= 0) { e.t = 2 + Math.random() * 4; e.mode = Math.random() < 0.5 ? Math.random() * 6.28 : -1; } if (e.mode >= 0) { wx = Math.sin(e.mode); wz = Math.cos(e.mode); e.yaw = e.mode; sp *= 0.6; } }
     e.vx += (wx * sp - e.vx) * Math.min(1, dt * 6); e.vz += (wz * sp - e.vz) * Math.min(1, dt * 6); let nx = e.x + e.vx * dt, nz = e.z + e.vz * dt; const h = heightAt(nx, nz); if (h < WR.waterY + 0.2 || Math.hypot(nx, nz) > WR.R - 14 || slopeAt(nx, nz) > 0.9) { e.mode = e.mode >= 0 ? e.mode + 2.5 : -1; e.vx = e.vz = 0; nx = e.x; nz = e.z; } else { let blocked = false; nearCols(nx, nz, 2, c => { if (Math.hypot(c.x - nx, c.z - nz) < c.r + e.r) blocked = true; }); if (blocked) { e.mode = Math.random() * 6.28; nx = e.x; nz = e.z; } } e.x = nx; e.z = nz; e.y += (heightAt(e.x, e.z) - e.y) * Math.min(1, dt * 14); e.anim += Math.hypot(e.vx, e.vz) * dt * 3;
   }
 }
@@ -564,10 +588,10 @@ function spawnWolf(x, z) { const w = { x, z, y: heightAt(x, z), yaw: 0, hp: 55, 
 function nearFire(x, z, r) { for (const f of FIRES) if (Math.hypot(f.x - x, f.z - z) < r) return true; return false; }
 let wolfT = 3;
 function updateWolves(dt) {
-  const night = SKYST.night > 0.45 && !G.peaceful; wolfT -= dt; if (night && wolfT <= 0 && WOLVES.length < 4 && !P.dead) { wolfT = 5 + Math.random() * 6; for (let tr = 0; tr < 8; tr++) { const a = Math.random() * 6.28, d = 34 + Math.random() * 18, x = P.x + Math.cos(a) * d, z = P.z + Math.sin(a) * d; const h = heightAt(x, z); if (h < WR.waterY + 0.6 || h > 14 || Math.hypot(x, z) > WR.R - 12 || safeZone(x, z) || slopeAt(x, z) > 0.7) continue; spawnWolf(x, z); break; } }
+  const night = SKYST.night > 0.45 && !G.peaceful; wolfT -= dt; if (night && wolfT <= 0 && WOLVES.length < (currentSeason() === 3 ? 6 : currentSeason() === 1 ? 3 : 4) && !P.dead) { wolfT = 5 + Math.random() * 6; for (let tr = 0; tr < 8; tr++) { const a = Math.random() * 6.28, d = 34 + Math.random() * 18, x = P.x + Math.cos(a) * d, z = P.z + Math.sin(a) * d; const h = heightAt(x, z); if (h < WR.waterY + 0.6 || h > 14 || Math.hypot(x, z) > WR.R - 12 || safeZone(x, z) || slopeAt(x, z) > 0.7) continue; spawnWolf(x, z); break; } }
   for (let i = WOLVES.length - 1; i >= 0; i--) { const w = WOLVES[i]; const dx = P.x - w.x, dz = P.z - w.z, d = Math.hypot(dx, dz); w.atk = Math.max(0, w.atk - dt); w.hurt = Math.max(0, w.hurt - dt); w.howl -= dt; if (!night && SKYST.night < 0.3 || d > 90 || P.dead) { w.fleeing = true; } if (w.fleeing && d > 60) { WOLVES.splice(i, 1); continue; }
     const torchR = P.torchOn ? 9 : 0, protectedP = safeZone(P.x, P.z) || nearFire(P.x, P.z, 10) || (torchR && d < torchR); let wx = 0, wz = 0, sp = 6.0;
-    if (w.fleeing) { const l = d || 1; wx = -dx / l; wz = -dz / l; sp = 7; } else if (d < 36 && !protectedP) { const l = d || 1; wx = dx / l; wz = dz / l; if (d < 1.7 && w.atk <= 0) { w.atk = 1.1; hurtPlayer(9, w); sfx.bite(); } if (d < 1.4) { wx = wz = 0; } } else if (protectedP && d < 22) { // circle at a distance
+    if (w.fleeing) { const l = d || 1; wx = -dx / l; wz = -dz / l; sp = 7; } else if (d < (P.worn === 'clothM' && P.inv.clothM > 0 ? 22 : 36) && !protectedP) { const l = d || 1; wx = dx / l; wz = dz / l; if (d < 1.7 && w.atk <= 0) { w.atk = 1.1; hurtPlayer(9, w); sfx.bite(); } if (d < 1.4) { wx = wz = 0; } } else if (protectedP && d < 22) { // circle at a distance
       w.ang += dt * 0.7; const tx = P.x + Math.cos(w.ang) * 17, tz = P.z + Math.sin(w.ang) * 17; const l = Math.hypot(tx - w.x, tz - w.z) || 1; wx = (tx - w.x) / l; wz = (tz - w.z) / l; sp = 4.4; } else { w.ang += dt * 0.3; wx = Math.cos(w.ang) * 0.3; wz = Math.sin(w.ang) * 0.3; sp = 1.6; }
     if (w.kb > 0) { w.kb -= dt; wx = -dx / (d || 1); wz = -dz / (d || 1); sp = 9; } if (wx || wz) w.yaw = Math.atan2(wx, wz); w.vx += (wx * sp - w.vx) * Math.min(1, dt * 8); w.vz += (wz * sp - w.vz) * Math.min(1, dt * 8); let nx = w.x + w.vx * dt, nz = w.z + w.vz * dt; if (heightAt(nx, nz) < WR.waterY - 0.2) { nx = w.x; nz = w.z; } nearCols(nx, nz, 2, c => { const ddx = nx - c.x, ddz = nz - c.z, dd = Math.hypot(ddx, ddz), rr = c.r + 0.5; if (dd < rr && dd > 0.001) { nx = c.x + ddx / dd * rr; nz = c.z + ddz / dd * rr; } }); w.x = nx; w.z = nz; w.y += (heightAt(w.x, w.z) - w.y) * Math.min(1, dt * 14); w.anim += Math.hypot(w.vx, w.vz) * dt * 2.4;
     if (w.howl <= 0 && d < 60) { w.howl = 9 + Math.random() * 10; sfx.howl(d); } }
@@ -603,10 +627,10 @@ const P = { x: 0, y: 5, z: 14, vy: 0, yaw: Math.PI, cy: 0, cp: -0.28, dist: 6.5,
 const K = {}, joy = { x: 0, y: 0 }, act = { act: false, use: false, jump: false, sprint: false }; let mdx = 0, mdy = 0, locked = false, isTouch = false, shakeT = 0, flashT = 0, TARGET = null;
 function lockPointer() { if (document.pointerLockElement === cvs) return; try { const r = cvs.requestPointerLock && cvs.requestPointerLock(); if (r && r.catch) r.catch(() => { }); } catch (e) { } }
 const INTER = []; // interactable resource nodes
-function addRes(k, n, notify) { P.inv[k] = (P.inv[k] || 0) + n; if (n > 0) { G.stats['got_' + k] = (G.stats['got_' + k] || 0) + n; if (notify) logPickup(k, n); } refreshHud && refreshHud(); }
+function addRes(k, n, notify, force) { if (!force && n > 0 && BULK.indexOf(k) >= 0) { const fr = capLeft(); if (fr <= 0) { toast('🎒 Plecak pełny! Zostaw rzeczy w skrzyni przy domu.'); return 0; } if (n > fr) { n = fr; toast('🎒 Plecak pełny — zabrano tylko część.'); } } P.inv[k] = (P.inv[k] || 0) + n; if (n > 0) { G.stats['got_' + k] = (G.stats['got_' + k] || 0) + n; if (notify) logPickup(k, n); } refreshHud && refreshHud(); }
 function takeRes(cost) { if (!hasAll(P.inv, cost)) return false; for (const k in cost) P.inv[k] -= cost[k]; refreshHud(); return true; }
 function hurtPlayer(n, from) { if (P.dead || P.hurtT > 0 || (G.state !== 'play' && G.state !== 'test')) return; if (P.sleeping > 0) P.sleeping = 0; P.hp -= n; P.hurtT = 0.7; flashT = 1; shakeT = 0.3; sfx.hurt(); if (from) { const dx = P.x - from.x, dz = P.z - from.z, l = Math.hypot(dx, dz) || 1; P.vx = dx / l * 7; P.vz = dz / l * 7; } if (P.hp <= 0) { P.hp = 0; die(); } }
-function die() { P.dead = true; G.stats.deaths = (G.stats.deaths || 0) + 1; document.exitPointerLock && document.exitPointerLock(); showDeath(); }
+function die() { P.dead = true; G.stats.deaths = (G.stats.deaths || 0) + 1; document.exitPointerLock && document.exitPointerLock(); let lost = 0; for (const k of BULK) { const l = Math.floor((P.inv[k] || 0) * 0.25); P.inv[k] = (P.inv[k] || 0) - l; lost += l; } const dw = document.getElementById('deathwhy'); if (dw) dw.textContent = lost > 0 ? 'Straciłeś ' + lost + ' surowców z plecaka (25%). Rzeczy w skrzyni są bezpieczne!' : 'Obudzisz się przy domu. Rzeczy w skrzyni są bezpieczne.'; showDeath(); }
 function respawn() { P.dead = false; P.hp = 70; P.hunger = Math.max(P.hunger, 55); P.x = WR.hx; P.z = WR.hz + 15; P.y = heightAt(P.x, P.z); P.vy = 0; P.fish = null; P.hurtT = 1.5; WOLVES.length = 0; hideDeath(); if (!isTouch) lockPointer(); }
 /* ----- ground, blockers ----- */
 function pierY(x, z) { if (!PIER) return null; const dx = x - PIER.x, dz = z - PIER.z, al = -(dx * PIER.ux + dz * PIER.uz), side = Math.abs(dx * -PIER.uz + dz * PIER.ux); if (al > -0.6 && al < PIER.len + 0.4 && side < 1.0) return WR.waterY + 0.5; return null; }
@@ -652,7 +676,7 @@ function findTarget() {
   const F = [Math.sin(P.yaw), Math.cos(P.yaw)]; let best = null, bs = 1e9; const consider = (kind, ref, x, z, maxd, y) => { const dx = x - P.x, dz = z - P.z, d = Math.hypot(dx, dz); if (d > maxd) return; const dot = d > 0.01 ? (dx * F[0] + dz * F[1]) / d : 1; if (dot < 0.2 && d > 1.8) return; const sc = d - dot * 1.4; if (sc < bs) { bs = sc; best = { kind, ref, x, z, d }; } };
   for (const w of WOLVES) consider('wolf', w, w.x, w.z, 3.0); for (const a of ANIMALS) consider('animal', a, a.x, a.z, 2.8);
   for (const nd of INTER) { if (!nd.alive) continue; consider('node', nd, nd.x, nd.z, 2.7 + (NT[nd.type].r || 0.5)); }
-  consider('bench', null, WR.hx - 9, WR.hz + 8, 3.0); consider('sign', null, WR.hx + 4.2, WR.hz + 7.6, 3.2); consider('fire', FIRES[0], WR.hx + 9, WR.hz + 8, 3.2);
+  consider('bench', null, WR.hx - 9, WR.hz + 8, 3.0); consider('stash', null, WR.hx - 5.5, WR.hz + 10, 3.2); consider('sign', null, WR.hx + 4.2, WR.hz + 7.6, 3.2); consider('fire', FIRES[0], WR.hx + 9, WR.hz + 8, 3.2);
   for (const c of CAMPS) { if (c.chest) consider('chest', c, c.chest.x, c.chest.z, 3.0); consider('fire', c.fire, c.x, c.z, 3.0); }
   if (HS.stage >= 4) consider('bed', null, WR.hx - 4.1, WR.hz - 2.8, 3.2); if (HS.stage >= 5) consider('fire', 'kitchen', WR.hx + 3.8, WR.hz - 3.2, 3.4); if (HS.stage >= 7) consider('garden', null, WR.hx - 10, WR.hz + 4.6, 4.2);
   if (FISHSPOT && P.tools.rod) { const d = Math.hypot(P.x - FISHSPOT.x, P.z - FISHSPOT.z); if (d < 3.6) { bs = -5; best = { kind: 'fish', ref: null, x: FISHSPOT.x, z: FISHSPOT.z, d }; } } else if (FISHSPOT && Math.hypot(P.x - FISHSPOT.x, P.z - FISHSPOT.z) < 3.6) { bs = -4; best = { kind: 'fishnorod', ref: null, x: FISHSPOT.x, z: FISHSPOT.z, d: 0 }; }
@@ -661,17 +685,17 @@ function findTarget() {
 function promptFor(t) {
   if (!t) return null; const k = t.kind; if (k === 'wolf') return { text: 'LPM / Akcja: walcz z wilkiem', key: 'act' }; if (k === 'animal') return { text: 'LPM / Akcja: poluj (' + (t.ref.type === 'deer' ? 'jeleń' : 'królik') + ')', key: 'act' };
   if (k === 'node') { const nd = t.ref, T_ = NT[nd.type]; if (T_.tool === 'axe') return { text: 'LPM / Akcja: zetnij (' + T_.name + ')', key: 'act' }; if (T_.tool === 'pick') { const ok = P.tools.pick >= T_.req; return { text: ok ? 'LPM / Akcja: kop (' + T_.name + ')' : T_.name + ': potrzebny ' + (T_.req === 2 ? 'kamienny' : 'lepszy') + ' kilof', key: 'act' }; } return { text: 'E: zbierz (' + T_.name + ')', key: 'use' }; }
-  if (k === 'bench') return { text: 'E: stół warsztatowy (wytwarzanie)', key: 'use' }; if (k === 'sign') return { text: 'E: plac budowy (dom: etap ' + HS.stage + '/7)', key: 'use' }; if (k === 'fire') return { text: t.ref === 'kitchen' ? 'E: kuchnia (gotuj)' : 'E: ognisko (piecz jedzenie)', key: 'use' };
+  if (k === 'bench') return { text: 'E: stół warsztatowy (wytwarzanie)', key: 'use' }; if (k === 'stash') return { text: 'E: skrzynia (schowek na rzeczy)', key: 'use' }; if (k === 'sign') return { text: 'E: plac budowy (dom: etap ' + HS.stage + '/7)', key: 'use' }; if (k === 'fire') return { text: t.ref === 'kitchen' ? 'E: kuchnia (gotuj)' : 'E: ognisko (piecz jedzenie)', key: 'use' };
   if (k === 'chest') return { text: t.ref.looted ? 'Skrzynia jest pusta' : 'E: otwórz skrzynię zwiadowców', key: 'use' }; if (k === 'bed') return { text: 'E: prześpij noc w łóżku', key: 'use' }; if (k === 'garden') return { text: 'E: zbierz warzywa z ogródka', key: 'use' };
   if (k === 'fish') return { text: P.fish ? (P.fish.bite > 0 ? 'E: TERAZ! Wyciągaj!' : 'E: zwiń żyłkę') : 'E: zarzuć wędkę', key: 'use' }; if (k === 'fishnorod') return { text: 'Zrób wędkę przy stole, żeby łowić', key: '' };
 }
-function gather(nd) {
+function gather(nd) { { const T0 = NT[nd.type]; if (BULK.indexOf(T0.res) >= 0 && capLeft() <= 0) { toast('🎒 Plecak pełny! Odłóż rzeczy do skrzyni przy domu (E).'); sfx.click(); P.swingCd = 0.4; return; } }
   const T_ = NT[nd.type]; if (T_.tool === 'pick' && P.tools.pick < T_.req) { toast(T_.name + ': potrzebny ' + (T_.req === 2 ? 'kamienny kilof (zrób przy stole)' : 'lepszy kilof')); sfx.click(); P.swingCd = 0.4; return; }
   const power = T_.tool === 'axe' ? TOOLP.axe[P.tools.axe] : TOOLP.pick[P.tools.pick]; P.sel = T_.tool; P.swingT = 1; P.swingCd = 0.52; nd.hp -= power; nd.shake = 0.5; const hy = nd.tree ? 1.2 : 0.8; spawnChips(nd.x, nd.y + hy, nd.z, nd.tree ? [0.55, 0.38, 0.2] : [0.6, 0.6, 0.62], 6); if (T_.tool === 'axe') sfx.chop(); else sfx.mine();
   if (nd.hp <= 0) { nd.alive = false; nd.fall = 0; nd.respawn = nd.tree ? 360 : 420; if (nd.col) { nd.col.r = 0.01; } const tier = T_.tool === 'axe' ? P.tools.axe : P.tools.pick; const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0) + (tier - 1); addRes(T_.res, n, true); G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] = (G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] || 0) + 1; if (nd.tree && Math.random() < 0.25) addRes('berry', 1, true); spawnDust(nd.x, nd.y + 0.3, nd.z, 6); if (nd.tree) sfx.fall(); nodeSetRebuild(nd.set); if (nd.tree) nodeSetRebuild(nd.set); }
   else nodeSetRebuild(nd.set);
 }
-function pickSimple(nd) { const T_ = NT[nd.type]; const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0); addRes(T_.res, n, true); nd.alive = false; nd.regrow = T_.regrow; sfx.pickup(); G.stats[nd.type] = (G.stats[nd.type] || 0) + 1; nodeSetRebuild(nd.set); }
+function pickSimple(nd) { const T_ = NT[nd.type]; if (nd.type === 'bush' && currentSeason() === 3) { toast('❄️ Zimą krzaki nie mają jagód.'); return; } if (nd.type === 'mush' && (currentSeason() === 1 || currentSeason() === 3)) { toast('🍄 Grzyby rosną wiosną i jesienią.'); return; } const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0); addRes(T_.res, n, true); nd.alive = false; nd.regrow = T_.regrow; sfx.pickup(); G.stats[nd.type] = (G.stats[nd.type] || 0) + 1; nodeSetRebuild(nd.set); }
 function doAction() {
   if (G.ui || G.paused || P.dead || P.sleeping > 0 || P.swingCd > 0) return; const t = TARGET; if (P.fish) { return; }
   if (t && t.kind === 'wolf') { P.swingT = 1; P.swingCd = 0.55; P.sel = P.tools.spear ? 'spear' : 'axe'; attackWolf(t.ref, weaponDmg()); return; } if (t && t.kind === 'animal') { P.swingT = 1; P.swingCd = 0.55; P.sel = P.tools.spear ? 'spear' : 'axe'; attackAnimal(t.ref, weaponDmg()); return; }
@@ -680,13 +704,13 @@ function doAction() {
 function interact() {
   if (G.ui || G.paused || P.dead || P.sleeping > 0) return; const t = TARGET; if (!t) return;
   if (t.kind === 'node') { const T_ = NT[t.ref.type]; if (!T_.tool) pickSimple(t.ref); else doAction(); return; }
-  if (t.kind === 'bench') { openBench(); return; } if (t.kind === 'sign') { openHouse(); return; } if (t.kind === 'fire') { openCook(t.ref === 'kitchen'); return; }
+  if (t.kind === 'bench') { openBench(); return; } if (t.kind === 'stash') { openStash(); return; } if (t.kind === 'sign') { openHouse(); return; } if (t.kind === 'fire') { openCook(t.ref === 'kitchen'); return; }
   if (t.kind === 'chest') { lootChest(t.ref); return; } if (t.kind === 'bed') { trySleep(); return; }
-  if (t.kind === 'garden') { if (G.gardenT > 0) { toast('Warzywa jeszcze rosną (' + Math.ceil(G.gardenT) + ' s).'); return; } addRes('veg', 3, true); G.gardenT = 200; sfx.pickup(); return; }
+  if (t.kind === 'garden') { if (G.gardenT > 0) { toast('Warzywa jeszcze rosną (' + Math.ceil(G.gardenT) + ' s).'); return; } addRes('veg', [3, 4, 3, 1][currentSeason()], true); G.gardenT = 200; sfx.pickup(); return; }
   if (t.kind === 'fish') { useRod(); return; }
 }
 function trySleep() { const night = SKYST.night > 0.3; if (!night) { toast('Prześpisz tylko noc (po zmroku).'); return; } if (WOLVES.some(w => Math.hypot(w.x - P.x, w.z - P.z) < 10)) { toast('Wilki są za blisko!'); return; } P.sleeping = 0.001; P.slept = false; sfx.sleep(); toast('Dobranoc…'); }
-function lootChest(c) { if (c.looted && (G.time - (c.lootedAt || 0)) < 300) { toast('Skrzynia jest pusta. Wróć później.'); return; } c.looted = true; c.lootedAt = G.time; sfx.door(); const r = mulberry((WN.seed ^ c.id * 977) + Math.floor(G.time)); const pool = [['torch', 2, 4], ['meatC', 1, 3], ['berry', 3, 6], ['iron', 1, 3], ['coal', 2, 5], ['plank', 4, 10], ['stone', 4, 9], ['veg', 1, 3]]; const out = []; for (let i = 0; i < 4; i++) { const p = pool[(r() * pool.length) | 0]; const n = p[1] + ((r() * (p[2] - p[1] + 1)) | 0); addRes(p[0], n, true); out.push(n + '× ' + RES[p[0]][1]); } if (!P.inv.journal || true) { P.inv.journal = (P.inv.journal || 0) + 1; logPickup('journal', 1); } G.stats.camps = (G.stats.camps || 0) + 1; toast('Skrzynia: ' + out.join(', ') + ' i Dziennik zwiadowcy!', 4500); refreshHud(); }
+function lootChest(c) { if (c.looted && (G.time - (c.lootedAt || 0)) < 300) { toast('Skrzynia jest pusta. Wróć później.'); return; } c.looted = true; c.lootedAt = G.time; sfx.door(); const r = mulberry((WN.seed ^ c.id * 977) + Math.floor(G.time)); const pool = [['torch', 2, 4], ['meatC', 1, 3], ['berry', 3, 6], ['iron', 1, 3], ['coal', 2, 5], ['plank', 4, 10], ['stone', 4, 9], ['veg', 1, 3]]; const out = []; for (let i = 0; i < 4; i++) { const p = pool[(r() * pool.length) | 0]; const n = p[1] + ((r() * (p[2] - p[1] + 1)) | 0); addRes(p[0], n, true, true); out.push(n + '× ' + RES[p[0]][1]); } if (!P.inv.journal || true) { P.inv.journal = (P.inv.journal || 0) + 1; logPickup('journal', 1); } G.stats.camps = (G.stats.camps || 0) + 1; toast('Skrzynia: ' + out.join(', ') + ' i Dziennik zwiadowcy!', 4500); refreshHud(); }
 /* ----- fishing ----- */
 function useRod() {
   if (P.fish) { if (P.fish.bite > 0) { P.fish = null; addRes('fish', 1, true); G.stats.fished = (G.stats.fished || 0) + 1; sfx.bite2(); sfx.splash(0.8); toast('🐟 Złowiłeś rybę!'); P.swingT = 1; } else { P.fish = null; toast('Zwinąłeś żyłkę.'); sfx.click(); } return; }
@@ -719,7 +743,8 @@ const QUESTS = [
   { id: 'wolves', t: 'Łowca wilków', d: 'Pokonaj 3 wilki. Włócznia (stół) zadaje największe obrażenia. Walcz przy ognisku!', chk: () => stv('wolves') >= 3, prog: () => [Math.min(3, stv('wolves')), 3], rew: { iron: 4, meatC: 4 } },
   { id: 'stage6', t: 'Piętro i balkon', d: 'Dobuduj piętro z balkonem. Odblokuje żelazne narzędzia.', chk: () => HS.stage >= 6, rew: { plank: 16, brick: 8 } },
   { id: 'expFar', t: 'Wielka wyprawa', exp: 'camp', camp: 3, rew: { iron: 6, coal: 6, meatC: 6, plank: 20 } },
-  { id: 'stage7', t: 'Dom marzeń', d: 'Zbuduj ostatni etap: ogródek, płot i latarnie.', chk: () => HS.stage >= 7, rew: { torch: 6, meatC: 6 }, title: 'Mistrz Budowniczy' }
+  { id: 'stage7', t: 'Dom marzeń', d: 'Zbuduj ostatni etap: ogródek, płot i latarnie.', chk: () => HS.stage >= 7, rew: { torch: 6, meatC: 6 }, title: 'Mistrz Budowniczy' },
+  { id: 'clothes', t: 'Ubierz się odpowiednio', d: 'Zrób przy stole dowolny strój i ubierz go w plecaku (zakładka Ubrania). Zimą bez ciepłego ubrania grozi odmrożenie!', chk: () => !!(P.worn && P.inv[P.worn] > 0), rew: { berry: 6, torch: 2 } }
 ];
 const TITLES = ['Nowicjusz', 'Drwal', 'Górnik', 'Budowniczy', 'Wędrowiec', 'Łowca', 'Weteran', 'Mistrz Budowniczy', 'Legenda'];
 const level = () => Math.floor(Math.sqrt(Q.xp / 45)); const titleOf = () => Q.title || TITLES[Math.min(TITLES.length - 1, level())];
@@ -731,7 +756,7 @@ function qObjective(q) {
   if (e.stage === 0) return 'Idź do obozu „' + e.camp.name + '” (znacznik, ok. ' + Math.round(Math.hypot(e.camp.x - P.x, e.camp.z - P.z)) + ' m). Zabierz pochodnie, jedzenie i broń. Noc jest groźna!'; if (e.stage === 1) return 'Jesteś w obozie! Otwórz skrzynię (E) i weź dziennik.'; return 'Masz dziennik! Wróć do domu (' + Math.round(Math.hypot(home.x - P.x, home.z - P.z)) + ' m).';
 }
 function updateWP() { const q = curQuest(); Q.wp = null; if (!q || !q.exp || !Q.exp || Q.exp.id !== q.id) return; const e = Q.exp; if (e.type === 'mine') { if (e.stage <= 1) Q.wp = { x: MINESITE.x, y: MINESITE.y + 3, z: MINESITE.z, label: 'Rudy', col: '#ffcf4a' }; else { const h = homeP(); Q.wp = { x: h.x, y: h.y + 3, z: h.z, label: 'Dom', col: '#7dff9a' }; } } else { if (e.stage <= 1) Q.wp = { x: e.camp.x, y: e.camp.y + 5, z: e.camp.z, label: 'Obóz', col: '#ffcf4a' }; else { const h = homeP(); Q.wp = { x: h.x, y: h.y + 3, z: h.z, label: 'Dom', col: '#7dff9a' }; } } }
-function completeQuest(q) { for (const k in q.rew) addRes(k, q.rew[k], true); Q.xp += 45 + (q.exp ? 45 : 0); if (q.title) Q.title = q.title; sfx.quest(); bigToast('Misja ukończona!', q.t); if (q.id.startsWith('x')) Q.extra++; else Q.i++; Q.exp = null; Q.wp = null; saveGame && saveGame(true); }
+function completeQuest(q) { for (const k in q.rew) addRes(k, q.rew[k], true, true); Q.xp += 45 + (q.exp ? 45 : 0); if (q.title) Q.title = q.title; sfx.quest(); bigToast('Misja ukończona!', q.t); if (q.id.startsWith('x')) Q.extra++; else Q.i++; Q.exp = null; Q.wp = null; saveGame && saveGame(true); }
 let qAcc = 0;
 function questTick(dt) {
   qAcc += dt; if (qAcc < 0.5) return; qAcc = 0; const q = curQuest(); if (!q) return;
@@ -750,14 +775,14 @@ const TOOLB = [['axe', '🪓', '1'], ['pick', '⛏️', '2'], ['rod', '🎣', '3
 function buildTools() { const t = $('tools'); t.innerHTML = ''; TOOLB.forEach(tb => { const el = document.createElement('div'); el.className = 'tl'; el.dataset.k = tb[0]; el.innerHTML = tb[1] + '<em>' + tb[2] + '</em><small></small>'; el.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (tb[0] === 'torch') toggleTorch(); else if (tb[0] === 'rod' || P.tools[tb[0]]) { P.sel = tb[0]; sfx.click(); } else toast('Zrób to narzędzie przy stole warsztatowym.'); refreshHud(); }); t.appendChild(el); }); }
 function toggleTorch() { if (P.torchOn) { P.torchOn = false; return; } if ((P.inv.torch || 0) <= 0) { toast('Zrób pochodnie przy stole (drewno + węgiel).'); return; } P.torchOn = true; P.torchT = Math.max(P.torchT, 0.01); toast('Pochodnia zapalona! Wilki boją się światła.'); sfx.click(); }
 function refreshHud() {
-  let h = ''; for (const k of ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew']) { const n = P.inv[k] || 0; if (n > 0 || k === 'wood' || k === 'stone') h += '<span title="' + RES[k][1] + '">' + RES[k][0] + ' ' + n + '</span>'; } if ((P.inv.journal || 0) > 0) h += '<span>📔 ' + P.inv.journal + '</span>'; const r = $('res'); if (r && r._h !== h) { r._h = h; r.innerHTML = h; }
+  let h = ''; for (const k of ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew']) { const n = P.inv[k] || 0; if (n > 0 || k === 'wood' || k === 'stone') h += '<span title="' + RES[k][1] + '">' + RES[k][0] + ' ' + n + '</span>'; } if ((P.inv.journal || 0) > 0) h += '<span>📔 ' + P.inv.journal + '</span>'; h = '<span title="Plecak: zajęte / maks" style="' + (capLeft() <= 8 ? 'border-color:#f66' : '') + '">🎒 ' + capUsed() + '/' + capMax() + '</span>' + h; const r = $('res'); if (r && r._h !== h) { r._h = h; r.innerHTML = h; }
   document.querySelectorAll('#tools .tl').forEach(el => { const k = el.dataset.k; const own = k === 'torch' ? (P.inv.torch || 0) > 0 || P.torchOn : k === 'rod' ? P.tools.rod > 0 : P.tools[k] > 0; el.classList.toggle('off', !own); el.classList.toggle('sel', k === 'torch' ? P.torchOn : P.sel === k); const sm = el.querySelector('small'); sm.textContent = k === 'torch' ? (P.inv.torch || 0) : (k === 'axe' || k === 'pick') ? ['', 'I', 'II', 'III'][P.tools[k]] : ''; });
 }
 let qSig = '', qA = 0, sigB = '';
 function updateHUD(dt) {
   const b = Math.round(P.hp) + '|' + Math.round(P.hunger) + '|' + Math.round(P.stam); if (b !== sigB) { sigB = b; const e = $('bars').children; e[0].firstChild.style.width = P.hp + '%'; e[1].firstChild.style.width = P.hunger + '%'; e[2].firstChild.style.width = P.stam + '%'; }
   const tt = G.dayT, hrs = ((tt * 24 + 6) % 24), hh = Math.floor(hrs), mm_ = Math.floor((hrs - hh) * 60); const seaIco = (G.state === 'play') ? SEASON_ICO[currentSeason()] + ' ' + seasonName() + ' · ' : '';
-  $('clock').textContent = (SKYST.night > 0.5 ? '🌙' : '☀️') + ' Dzień ' + G.day + ' ' + seaIco + '· ' + String(hh).padStart(2, '0') + ':' + String(mm_).padStart(2, '0') + (P.hunger < 20 ? ' · 🍖 głodny!' : '');
+  $('clock').textContent = (SKYST.night > 0.5 ? '🌙' : '☀️') + ' Dzień ' + G.day + ' ' + seaIco + String(hh).padStart(2, '0') + ':' + String(mm_).padStart(2, '0') + (P.hunger < 20 ? ' · 🍖 głodny!' : '');
   // pasek temperatury
   const tb = document.getElementById('tempbar'); if (tb && G.state === 'play') {
     const t = P.temp !== undefined ? P.temp : 20;
@@ -782,13 +807,13 @@ const costHtml = c => Object.keys(c).map(k => '<span class="cost ' + ((P.inv[k] 
 const mainTabs = cur => [{ t: '🎒 Plecak', on: cur === 'inv', f: openInv }, { t: '📜 Misje', on: cur === 'q', f: openQuests }];
 function openBench() {
   G.ui = 'bench'; showPanel(); const bd = winShell('Stół warsztatowy', mainTabs('bench')); let h = '<div class="lbl">WYTWARZANIE</div>';
-  RCP.forEach((r, i) => { const owned = r.tool && P.tools[r.tool[0]] >= r.tool[1], locked = r.need && HS.stage < r.need, can = !owned && !locked && hasAll(P.inv, r.i); const outN = r.tool ? (TOOLN[r.tool[0]][0] + ' ' + (TOOLN[r.tool[0]][1][r.tool[1]] || '')) : RES[r.o[0]][1] + ' ×' + r.o[1]; h += '<div class="stage ' + (owned ? 'done' : '') + '"><div class="tx"><b>' + (r.tool ? TOOLN[r.tool[0]][2] + ' ' : RES[r.o[0]][0] + ' ') + outN + '</b>' + r.t + '<div>' + costHtml(r.i) + (locked ? '<span class="cost no">🔒 Piętro (etap ' + r.need + ')</span>' : '') + '</div></div><div class="btn sm green" data-i="' + i + '" ' + (can ? '' : 'disabled') + '>' + (owned ? 'Masz' : 'Zrób') + '</div></div>'; });
-  bd.innerHTML = h; bd.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const r = RCP[+b.dataset.i]; if (!takeRes(r.i)) return; if (r.tool) { P.tools[r.tool[0]] = r.tool[1]; P.sel = r.tool[0]; G.stats['crafted_' + r.id] = 1; toast('Stworzono: ' + TOOLN[r.tool[0]][2] + ' ' + TOOLN[r.tool[0]][0] + ' ' + TOOLN[r.tool[0]][1][r.tool[1]]); } else { addRes(r.o[0], r.o[1], true); G.stats['crafted_' + r.o[0]] = (G.stats['crafted_' + r.o[0]] || 0) + r.o[1]; } sfx.craft(); refreshHud(); openBench(); });
+  RCP.forEach((r, i) => { const owned = (r.tool && P.tools[r.tool[0]] >= r.tool[1]) || (r.id === 'bag' && (P.inv.bag || 0) >= 2), locked = r.need && HS.stage < r.need, can = !owned && !locked && hasAll(P.inv, r.i); const outN = r.tool ? (TOOLN[r.tool[0]][0] + ' ' + (TOOLN[r.tool[0]][1][r.tool[1]] || '')) : RES[r.o[0]][1] + ' ×' + r.o[1]; h += '<div class="stage ' + (owned ? 'done' : '') + '"><div class="tx"><b>' + (r.tool ? TOOLN[r.tool[0]][2] + ' ' : RES[r.o[0]][0] + ' ') + outN + '</b>' + r.t + '<div>' + costHtml(r.i) + (locked ? '<span class="cost no">🔒 Piętro (etap ' + r.need + ')</span>' : '') + '</div></div><div class="btn sm green" data-i="' + i + '" ' + (can ? '' : 'disabled') + '>' + (owned ? 'Masz' : 'Zrób') + '</div></div>'; });
+  bd.innerHTML = h; bd.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const r = RCP[+b.dataset.i]; if (!takeRes(r.i)) return; if (r.tool) { P.tools[r.tool[0]] = r.tool[1]; P.sel = r.tool[0]; G.stats['crafted_' + r.id] = 1; toast('Stworzono: ' + TOOLN[r.tool[0]][2] + ' ' + TOOLN[r.tool[0]][0] + ' ' + TOOLN[r.tool[0]][1][r.tool[1]]); } else { addRes(r.o[0], r.o[1], true, true); G.stats['crafted_' + r.o[0]] = (G.stats['crafted_' + r.o[0]] || 0) + r.o[1]; } sfx.craft(); refreshHud(); openBench(); });
 }
 function openHouse() {
-  G.ui = 'house'; showPanel(); const bd = winShell('Plac budowy: dom', mainTabs('house')); let h = '<div style="margin-bottom:8px;font-size:13px;color:#d8c8a8">Dom rośnie etapami: każdy ulepszony etap pojawia się na działce i daje nowe możliwości.</div>';
-  for (let s = 1; s <= 7; s++) { const S = HOUSE_STAGES[s], done = HS.stage >= s, next = HS.stage + 1 === s, can = next && hasAll(P.inv, S.cost); h += '<div class="stage ' + (done ? 'done' : next ? 'next' : '') + '"><div class="no">' + (done ? '✔' : s) + '</div><div class="tx"><b>' + S.n + '</b>' + S.gives + (done ? '' : '<div>' + costHtml(S.cost) + '</div>') + '</div>' + (next ? '<div class="btn sm green" id="bld" ' + (can ? '' : 'disabled') + '>Buduj</div>' : '') + '</div>'; }
-  bd.innerHTML = h; const b = bd.querySelector('#bld'); if (b) b.onclick = () => { const s = HS.stage + 1; if (!takeRes(HOUSE_STAGES[s].cost)) return; closeUI(); startBuild(s); sfx.build(); setTimeout(() => sfx.buildDone(), 2900); bigToast('Budowa: ' + HOUSE_STAGES[s].n, 'Do dzieła, budowniczy!'); G.stats['stage' + s] = 1; };
+  G.ui = 'house'; showPanel(); const bd = winShell('Plac budowy: dom', mainTabs('house')); let h = '<div style="margin-bottom:8px;font-size:13px;color:#d8c8a8">Dom rośnie etapami: każdy ulepszony etap pojawia się na działce i daje nowe możliwości. Do budowy liczą się też surowce ze skrzyni.</div>';
+  for (let s = 1; s <= 7; s++) { const S = HOUSE_STAGES[s], done = HS.stage >= s, next = HS.stage + 1 === s, can = next && hasAllS(S.cost); h += '<div class="stage ' + (done ? 'done' : next ? 'next' : '') + '"><div class="no">' + (done ? '✔' : s) + '</div><div class="tx"><b>' + S.n + '</b>' + S.gives + (done ? '' : '<div>' + costHtmlS(S.cost) + '</div>') + '</div>' + (next ? '<div class="btn sm green" id="bld" ' + (can ? '' : 'disabled') + '>Buduj</div>' : '') + '</div>'; }
+  bd.innerHTML = h; const b = bd.querySelector('#bld'); if (b) b.onclick = () => { const s = HS.stage + 1; if (!takeResS(HOUSE_STAGES[s].cost)) return; closeUI(); startBuild(s); sfx.build(); setTimeout(() => sfx.buildDone(), 2900); bigToast('Budowa: ' + HOUSE_STAGES[s].n, 'Do dzieła, budowniczy!'); G.stats['stage' + s] = 1; };
 }
 function openCook(kitchen) {
   G.ui = 'cook'; showPanel(); const bd = winShell(kitchen ? 'Kuchnia' : 'Ognisko', mainTabs('cook')); let h = '<div class="lbl">GOTUJ I PIEKŁ</div>';
@@ -801,22 +826,20 @@ function openInv() {
   const tabs = ['Zasoby','Jedzenie','Ubrania','Narzędzia']; let active = openInv._tab || 0;
   let h = '<div id="inv-tabs">' + tabs.map((t,i) => '<div class="inv-tab' + (i===active?' on':'') + '" data-tab="' + i + '">' + t + '</div>').join('') + '</div>';
   if (active === 0) {
-    h += '<div class="lbl">ZASOBY</div><div class="row2">';
-    for (const k of ['wood','plank','stone','brick','iron','coal','torch']) { if (!(P.inv[k] > 0)) continue; h += '<span class="cost" style="font-size:15px">' + RES[k][0] + ' ' + RES[k][1] + ': ' + P.inv[k] + '</span>'; }
-    h += '</div><div class="lbl">SUROWCE NATURALNE</div><div class="row2">';
-    for (const k of ['berry','mushroom','fish','fishC','meat','meatC','veg','stew','hotdrink']) { if (!(P.inv[k] > 0) || FOODV[k] === undefined) { if (!(P.inv[k] > 0) || k === 'journal') continue; } if (k in FOODV) continue; h += '<span class="cost" style="font-size:15px">' + RES[k][0] + ' ' + RES[k][1] + ': ' + P.inv[k] + '</span>'; }
-    if ((P.inv.journal||0) > 0) h += '<span class="cost" style="font-size:15px">📔 Dziennik: ' + P.inv.journal + '</span>';
-    h += '</div>';
+    h += '<div class="lbl">PLECAK ' + capUsed() + '/' + capMax() + ' (surowce)</div><div class="row2">';
+    for (const k in RES) { if (!(P.inv[k] > 0) || k in FOODV || k.indexOf('cloth') === 0 || k === 'journal') continue; h += '<span class="cost" style="font-size:15px">' + RES[k][0] + ' ' + RES[k][1] + ': ' + P.inv[k] + '</span>'; }
+    if ((P.inv.journal || 0) > 0) h += '<span class="cost" style="font-size:15px">📔 Dziennik: ' + P.inv.journal + '</span>';
+    h += '</div><div style="font-size:12px;color:#c8b898;margin-top:8px">Pełny plecak? Odłóż rzeczy do skrzyni przy domu (E). Większy plecak zrobisz przy stole.</div>';
   } else if (active === 1) {
     const s = currentSeason ? currentSeason() : 0; h += '<div class="lbl">JEDZENIE · sytość ' + Math.round(P.hunger) + '% · temp ' + (Math.round(P.temp||20)) + '°C</div>';
     for (const k in FOODV) { if (!(P.inv[k] > 0)) continue; h += '<div class="stage"><div class="tx"><b>' + RES[k][0] + ' ' + RES[k][1] + ' ×' + P.inv[k] + '</b>+' + FOODV[k] + ' sytości' + (k==='stew'?', +30 zdrowia':'') + (k==='hotdrink'?' +ogrzewa 🔥':'') + '</div><div class="btn sm green" data-e="' + k + '">Zjedz</div></div>'; }
   } else if (active === 2) {
     const s = currentSeason ? currentSeason() : 0;
     h += '<div class="lbl">UBRANIA · pora roku: ' + SEASON_ICO[s] + ' ' + SEASONS[s] + '</div>';
-    const clothes = [{k:'clothW', n:'🧥 Ciepły strój', bonus:'+12°C zimą/jesienią', best:[2,3]}, {k:'clothL', n:'👕 Lekki strój', bonus:'+8°C latem', best:[1]}, {k:'clothH', n:'🥻 Wiosenny strój', bonus:'+6°C wiosną', best:[0]}];
+    const clothes = [{k:'clothW', n:'🧥 Ciepły strój', bonus:'+16°C zimą, +12°C jesienią', best:[3]}, {k:'clothA', n:'🧣 Jesienny strój', bonus:'+12°C jesienią, +8°C zimą', best:[2]}, {k:'clothH', n:'🥻 Wiosenny strój', bonus:'+8°C wiosną', best:[0]}, {k:'clothL', n:'👕 Lekki strój', bonus:'+10°C latem (chłodzi)', best:[1]}, {k:'clothM', n:'🌿 Strój moro', bonus:'+3 do +7°C, wilki i zwierzęta widzą cię z bliska', best:[]}];
     for (const c of clothes) {
       const own = (P.inv[c.k]||0) > 0, worn = P.worn === c.k, ideal = c.best.includes(s);
-      h += '<div class="stage' + (worn?' next':'') + '"><div class="no">' + (worn?'✔':own?'○':'—') + '</div><div class="tx"><b>' + c.n + '</b>' + c.bonus + (ideal?'<span class="season-badge" style="background:#2a6">✓ dobry teraz</span>':'') + '</div>' + (own?'<div class="btn sm ' + (worn?'red':'green') + '" data-wr="' + c.k + '">' + (worn?'Zdejmij':'Ubierz') + '</div>':'<div class="cost no">Nie masz — zrób przy stole</div>') + '</div>';
+      h += '<div class="stage' + (worn?' next':'') + '"><div class="no">' + (worn?'✔':own?'○':'—') + '</div><div class="tx"><b>' + c.n + '</b>' + c.bonus + (ideal?'<span class="season-badge" style="background:#2a6">✓ dobry teraz</span>':'') + '</div>' + (own?'<div class="btn sm ' + (worn?'red':'green') + '" data-wr="' + c.k + '">' + (worn?'Zdejmij':'Ubierz') + '</div>':'<div style="font-size:12px;color:#ff9a8a;white-space:nowrap">brak — zrób przy stole</div>') + '</div>';
     }
     h += '<div style="font-size:12px;color:#c8b898;margin-top:8px">Ubrane ubranie podnosi odporność na zimno i ciepło. Możesz mieć tylko jedno naraz.</div>';
   } else {
@@ -833,7 +856,7 @@ function openQuests() {
 }
 function pauseGame(on) {
   if (!on) { closeUI(); return; } if (G.ui) return; G.paused = true; G.ui = 'pause'; showPanel(); const bd = winShell('Pauza', null);
-  bd.innerHTML = '<div style="max-width:380px;margin:0 auto"><div style="text-align:center;margin-bottom:12px;font-size:16px">' + (G.state==='play' ? SEASON_ICO[currentSeason()] + ' ' + seasonName() + ' · Dzień ' + G.day : '') + '</div><button class="btn green" id="p1">▶ Wróć do gry</button><button class="btn" id="p2">🎒 Plecak</button><button class="btn" id="p3">📜 Misje</button><button class="btn" id="p4">⚙ Ustawienia</button><button class="btn" id="p5">💾 Zapisz</button><button class="btn red" id="p6">⏏ Zapisz i wyjdź do menu</button><div class="foot"><b>Miłosz Games Inc.</b> &copy; 2026</div></div>';
+  bd.innerHTML = '<div style="max-width:380px;margin:0 auto"><div style="text-align:center;margin-bottom:12px;font-size:16px">' + (G.state==='play' ? SEASON_ICO[currentSeason()] + ' ' + seasonName() + ' · Dzień ' + G.day + ' · jeszcze ' + (5 - ((G.day - 1) % 5)) + ' dni tej pory' : '') + '</div><button class="btn green" id="p1">▶ Wróć do gry</button><button class="btn" id="p2">🎒 Plecak</button><button class="btn" id="p3">📜 Misje</button><button class="btn" id="p4">⚙ Ustawienia</button><button class="btn" id="p5">💾 Zapisz</button><button class="btn red" id="p6">⏏ Zapisz i wyjdź do menu</button><div class="foot"><b>Miłosz Games Inc.</b> &copy; 2026</div></div>';
   bd.querySelector('#p1').onclick = closeUI; bd.querySelector('#p2').onclick = openInv; bd.querySelector('#p3').onclick = openQuests; bd.querySelector('#p4').onclick = () => openSettings(true); bd.querySelector('#p5').onclick = () => { saveGame(); toast('Zapisano grę 💾'); }; bd.querySelector('#p6').onclick = () => { saveGame(); exitToTitle(); };
 }
 function showDeath() { $('death').classList.remove('hide'); $('hud').classList.add('hide'); } function hideDeath() { $('death').classList.add('hide'); $('hud').classList.remove('hide'); }
@@ -847,14 +870,14 @@ function setupWorld(seed, stage) {
 }
 let HOMEPROPS = null;
 function buildHomeProps() { if (HOMEPROPS) { freeMesh(HOMEPROPS); WORLDMESH = WORLDMESH.filter(m => m !== HOMEPROPS); } const mb = new MeshB(); mb.jit = 0.05; const bx = WR.hx - 9, bz = WR.hz + 8, by = heightAt(bx, bz); const W1 = [0.62, 0.42, 0.24];
-  mb.box(bx, by + 0.85, bz, 2.4, 0.18, 1.2, [0.72, 0.52, 0.3], { top: [0.8, 0.6, 0.36] }); for (const [dx, dz] of [[-1, -0.45], [1, -0.45], [-1, 0.45], [1, 0.45]]) mb.box(bx + dx, by + 0.42, bz + dz, 0.16, 0.84, 0.16, W1); mb.box(bx - 0.5, by + 1.05, bz, 0.9, 0.06, 0.12, [0.75, 0.75, 0.8]); mb.box(bx + 0.5, by + 1.0, bz, 0.4, 0.15, 0.4, [0.5, 0.35, 0.2]); mb.box(bx + 0.9, by + 1.1, bz + 0.2, 0.3, 0.3, 0.3, [0.85, 0.7, 0.4]); addCollider(bx, bz, 1.4, null);
+  mb.box(bx, by + 0.85, bz, 2.4, 0.18, 1.2, [0.72, 0.52, 0.3], { top: [0.8, 0.6, 0.36] }); for (const [dx, dz] of [[-1, -0.45], [1, -0.45], [-1, 0.45], [1, 0.45]]) mb.box(bx + dx, by + 0.42, bz + dz, 0.16, 0.84, 0.16, W1); mb.box(bx - 0.5, by + 1.05, bz, 0.9, 0.06, 0.12, [0.75, 0.75, 0.8]); mb.box(bx + 0.5, by + 1.0, bz, 0.4, 0.15, 0.4, [0.5, 0.35, 0.2]); mb.box(bx + 0.9, by + 1.1, bz + 0.2, 0.3, 0.3, 0.3, [0.85, 0.7, 0.4]); addCollider(bx, bz, 1.4, null); { const cx0 = WR.hx - 5.5, cz0 = WR.hz + 10, cy0 = heightAt(cx0, cz0); mb.box(cx0, cy0 + 0.45, cz0, 1.4, 0.9, 0.9, [0.55, 0.36, 0.2], { top: [0.62, 0.42, 0.24] }); mb.box(cx0, cy0 + 0.97, cz0, 1.44, 0.2, 0.94, [0.63, 0.43, 0.24]); mb.box(cx0, cy0 + 0.62, cz0 + 0.47, 0.22, 0.22, 0.06, [0.95, 0.8, 0.25], { emit: 0.2 }); mb.box(cx0, cy0 + 0.5, cz0, 0.08, 0.9, 0.96, [0.35, 0.24, 0.14]); addCollider(cx0, cz0, 1.0, null); }
   const sx = WR.hx + 4.2, sz = WR.hz + 7.6, sy = heightAt(sx, sz); mb.cyl(sx, sy, sz, 0.1, 0.1, 2.0, 5, W1); mb.box(sx, sy + 1.7, sz, 1.5, 0.9, 0.08, [0.85, 0.65, 0.35], { top: [0.9, 0.7, 0.4] }); mb.prism(sx, sy + 2.2, sz, 0.9, 0, 0.5, 0.4, [0.82, 0.24, 0.2], [0.9, 0.8, 0.6], { ry: Math.PI / 2 }); mb.box(sx, sy + 1.6, sz + 0.05, 0.9, 0.4, 0.04, [0.95, 0.9, 0.75]);
   const fx = WR.hx + 9, fz = WR.hz + 8, fy = heightAt(fx, fz); for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28; mb.box(fx + Math.cos(a) * 0.95, fy + 0.15, fz + Math.sin(a) * 0.95, 0.4, 0.3, 0.34, [0.5 + 0.1 * (i % 2), 0.5, 0.5], { ry: -a }); } for (let i = 0; i < 3; i++) mb.box(fx + Math.cos(i * 2.1) * 0.25, fy + 0.2, fz + Math.sin(i * 2.1) * 0.25, 0.9, 0.18, 0.18, [0.4, 0.27, 0.15], { ry: i * 2.1 }); for (let i = 0; i < 3; i++) { const a = i * 2.2 + 1; mb.cyl(fx + Math.cos(a) * 2.2, fy, fz + Math.sin(a) * 2.2, 0.3, 0.3, 0.42, 6, [0.45, 0.3, 0.17], { top: [0.7, 0.55, 0.35] }); }
   HOMEPROPS = makeMesh(mb); WORLDMESH.push(HOMEPROPS); }
 /* ----- save / load ----- */
 function saveGame(quiet) {
   if (!G.id || G.state !== 'play') return false; const dead = []; for (const n of NODES) if (n.type !== 'deco' && !n.alive) dead.push([n.id, n.respawn || n.regrow || 1]);
-  const d = { v: 1, seed: WN.seed, peaceful: G.peaceful, dayT: G.dayT, day: G.day, playT: G.time, P: { x: P.x, y: P.y, z: P.z, cy: P.cy, cp: P.cp, hp: P.hp, hunger: P.hunger, stam: P.stam, inv: P.inv, tools: P.tools, sel: P.sel, torchT: P.torchT, temp: P.temp || 20, worn: P.worn || null }, stage: HS.stage, Q: { i: Q.i, xp: Q.xp, extra: Q.extra, title: Q.title, exp: Q.exp ? { id: Q.exp.id, type: Q.exp.type, stage: Q.exp.stage, campId: Q.exp.camp ? Q.exp.camp.id : -1, base: Q.exp.base } : null }, stats: G.stats, dead, looted: CAMPS.map(c => c.looted ? 1 : 0), gardenT: G.gardenT || 0 };
+  const d = { v: 1, seed: WN.seed, peaceful: G.peaceful, dayT: G.dayT, day: G.day, playT: G.time, P: { x: P.x, y: P.y, z: P.z, cy: P.cy, cp: P.cp, hp: P.hp, hunger: P.hunger, stam: P.stam, inv: P.inv, tools: P.tools, sel: P.sel, torchT: P.torchT, temp: P.temp || 20, worn: P.worn || null }, stage: HS.stage, Q: { i: Q.i, xp: Q.xp, extra: Q.extra, title: Q.title, exp: Q.exp ? { id: Q.exp.id, type: Q.exp.type, stage: Q.exp.stage, campId: Q.exp.camp ? Q.exp.camp.id : -1, base: Q.exp.base } : null }, stats: G.stats, dead, looted: CAMPS.map(c => c.looted ? 1 : 0), gardenT: G.gardenT || 0, stash: G.stash || {} };
   if (!LS.set('bh2_w_' + G.id, d)) { if (!quiet) toast('Brak miejsca na zapis!'); return false; } const L = worldList(), m = L.find(w => w.id === G.id); if (m) { m.played = Date.now(); m.day = G.day; m.stage = HS.stage; m.lvl = level(); LS.set('bh2_worlds', L); } return true;
 }
 const tick = () => new Promise(r => setTimeout(r, 0));
@@ -862,8 +885,8 @@ async function startGame(meta, isNew) {
   audioInit(); $('title').classList.add('hide'); hidePanel(); $('loading').style.display = 'flex'; $('loadmsg').textContent = 'Tworzenie świata…'; await tick(); const save = isNew ? null : LS.get('bh2_w_' + meta.id, null);
   { const L = worldList(); if (!L.some(w => w.id === meta.id)) { L.push(Object.assign({ created: Date.now(), played: Date.now(), day: 1, stage: 0 }, meta)); LS.set('bh2_worlds', L); } }
   setupWorld(save ? save.seed : meta.seed, save ? save.stage : 0); await tick();
-  G.id = meta.id; G.name = meta.name; G.peaceful = !!meta.peaceful; G.dead = false; G.paused = false; G.ui = null; G.stats = {}; G.time = 0; G.debug = false; G.gardenT = 0; Object.assign(Q, { i: 0, xp: 0, extra: 0, exp: null, wp: null, endless: null, title: '' }); P.inv = {}; P.tools = { axe: 1, pick: 1, rod: 0, spear: 0 }; P.worn = null; P.temp = 20; P.sel = 'axe'; P.hp = 100; P.hunger = 100; P.stam = 100; P.torchOn = false; P.torchT = 0; P.dead = false; P.fish = null; P.sleeping = 0; P.vx = P.vz = P.vy = 0; P.cy = 0; P.cp = -0.28; G.dayT = 0.08; G.day = 1; G.wasNight = false;
-  if (save) { G.dayT = save.dayT; G.day = save.day; G.time = save.playT || 0; G.stats = save.stats || {}; G.gardenT = save.gardenT || 0; Object.assign(P, { x: save.P.x, y: save.P.y, z: save.P.z, cy: save.P.cy, cp: save.P.cp, hp: save.P.hp, hunger: save.P.hunger, stam: save.P.stam, sel: save.P.sel, torchT: save.P.torchT || 0 }); P.inv = save.P.inv || {}; P.temp = save.P.temp || 20; P.worn = save.P.worn || null; P.tools = Object.assign({ axe: 1, pick: 1, rod: 0, spear: 0 }, save.P.tools || {}); Object.assign(Q, { i: save.Q.i, xp: save.Q.xp, extra: save.Q.extra, title: save.Q.title || '' }); for (const [id, t] of save.dead) { const nd = NODES[id]; if (!nd) continue; nd.alive = false; nd.fall = 1; if (nd.tree) { nd.respawn = t; } else if (nd.type === 'bush' || nd.type === 'mush') nd.regrow = t; else nd.respawn = t; if (nd.col) nd.col.r = 0.01; } CAMPS.forEach((c, i) => { c.looted = !!(save.looted && save.looted[i]); }); for (const s in SETS) nodeSetRebuild(s); if (save.Q.exp) { const e = save.Q.exp; Q.exp = { id: e.id, type: e.type, stage: e.stage, base: e.base, camp: CAMPS.find(c => c.id === e.campId) }; } }
+  G.id = meta.id; G.name = meta.name; G.peaceful = !!meta.peaceful; G.dead = false; G.paused = false; G.ui = null; G.stats = {}; G.time = 0; G.debug = false; G.gardenT = 0; G.stash = {}; Object.assign(Q, { i: 0, xp: 0, extra: 0, exp: null, wp: null, endless: null, title: '' }); P.inv = {}; P.tools = { axe: 1, pick: 1, rod: 0, spear: 0 }; P.worn = null; P.temp = 20; P.sel = 'axe'; P.hp = 100; P.hunger = 100; P.stam = 100; P.torchOn = false; P.torchT = 0; P.dead = false; P.fish = null; P.sleeping = 0; P.vx = P.vz = P.vy = 0; P.cy = 0; P.cp = -0.28; G.dayT = 0.08; G.day = 1; G.wasNight = false;
+  if (save) { G.dayT = save.dayT; G.day = save.day; G.time = save.playT || 0; G.stats = save.stats || {}; G.gardenT = save.gardenT || 0; G.stash = save.stash || {}; Object.assign(P, { x: save.P.x, y: save.P.y, z: save.P.z, cy: save.P.cy, cp: save.P.cp, hp: save.P.hp, hunger: save.P.hunger, stam: save.P.stam, sel: save.P.sel, torchT: save.P.torchT || 0 }); P.inv = save.P.inv || {}; P.temp = save.P.temp || 20; P.worn = save.P.worn || null; P.tools = Object.assign({ axe: 1, pick: 1, rod: 0, spear: 0 }, save.P.tools || {}); Object.assign(Q, { i: save.Q.i, xp: save.Q.xp, extra: save.Q.extra, title: save.Q.title || '' }); for (const [id, t] of save.dead) { const nd = NODES[id]; if (!nd) continue; nd.alive = false; nd.fall = 1; if (nd.tree) { nd.respawn = t; } else if (nd.type === 'bush' || nd.type === 'mush') nd.regrow = t; else nd.respawn = t; if (nd.col) nd.col.r = 0.01; } CAMPS.forEach((c, i) => { c.looted = !!(save.looted && save.looted[i]); }); for (const s in SETS) nodeSetRebuild(s); if (save.Q.exp) { const e = save.Q.exp; Q.exp = { id: e.id, type: e.type, stage: e.stage, base: e.base, camp: CAMPS.find(c => c.id === e.campId) }; } }
   else { P.x = WR.hx; P.z = WR.hz + 17; P.y = heightAt(P.x, P.z); P.cy = 0; }
   P.y = Math.max(P.y, groundAt(P.x, P.z)); G.state = 'play'; $('loading').style.display = 'none'; $('hud').classList.remove('hide'); if (isTouch) $('touch').classList.remove('hide'); hideDeath(); qSig = ''; refreshHud(); G.lastSave = performance.now(); updateWP();
   if (isNew) setTimeout(() => bigToast('Witaj w Bild House!', 'Zetnij drzewa, zbierz kamień i zbuduj dom'), 400); else toast('Wczytano świat „' + G.name + '”'); if (!isTouch) toast('Kliknij w okno, aby sterować kamerą myszą', 3500);
@@ -880,7 +903,7 @@ function showTitle() {
   let h = '<div class="worlds">'; if (L.length) L.forEach(w => { h += '<div class="wrow"><div class="nm">' + esc(w.name) + '<small>dom: etap ' + (w.stage || 0) + '/7 · dzień ' + (w.day || 1) + (w.lvl ? ' · poz. ' + w.lvl : '') + '</small></div><div class="btn sm green" data-p="' + w.id + '">Graj</div><div class="btn sm red" data-d="' + w.id + '">🗑</div></div>'; }); else h += '<div style="text-align:center;margin:10px;color:#dfeccf">Brak światów. Stwórz pierwszy!</div>'; h += '</div><button class="btn green" id="tNew">＋ Nowy świat</button><div style="display:flex;gap:8px"><button class="btn" id="tHow">❓ Jak grać</button><button class="btn" id="tSet">⚙ Ustawienia</button></div>'; tm.innerHTML = h;
   tm.querySelectorAll('[data-p]').forEach(b => b.onclick = () => startGame(L.find(w => w.id === b.dataset.p), false)); tm.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { if (confirm('Usunąć ten świat na zawsze?')) { LS.del('bh2_w_' + b.dataset.d); LS.set('bh2_worlds', worldList().filter(w => w.id !== b.dataset.d)); showTitle(); } }); $('tNew').onclick = () => { audioInit(); sfx.click(); newWorldDialog(); }; $('tSet').onclick = () => { audioInit(); openSettings(false); }; $('tHow').onclick = () => { audioInit(); openHow(); };
 }
-function openHow() { $('panel').classList.remove('hide'); const bd = winShell('Jak grać', null); bd.innerHTML = '<div style="font-size:14px;line-height:1.55"><b style="color:#ffd84a">Cel:</b> zbuduj dom w 7 etapach (fundament, ściany, dach, drzwi i okna, wnętrze, piętro, ogród), zbieraj surowce w lesie i przetrwaj noce. Wykonuj misje i wyprawy do obozów!<br><br><b style="color:#ffd84a">Komputer:</b> WASD ruch · Shift bieg · Spacja skok · mysz kamera (kliknij w okno) · LPM akcja (ścinaj, kop, walcz) · E użyj (stół, tablica budowy, ognisko, skrzynia, łóżko) · 1–4 narzędzia · Q pochodnia · F zjedz · I plecak · J misje · V widok z oczu · Esc pauza.<br><br><b style="color:#ffd84a">Telefon:</b> lewy joystick ruch · przeciągnij po ekranie, by obracać kamerę · ⚒ akcja · ✋ użyj · ⬆ skok · 🏃 bieg.<br><br><b style="color:#ffd84a">Wskazówki:</b> przy stole warsztatowym zrobisz deski, cegły, pochodnie, wędkę, włócznię i lepsze narzędzia · tablica budowy stoi przed domem · żelazo jest w górach · w nocy zostań przy ognisku albo w domu z drzwiami · wilki boją się pochodni.</div>'; }
+function openHow() { $('panel').classList.remove('hide'); const bd = winShell('Jak grać', null); bd.innerHTML = '<div style="font-size:14px;line-height:1.55"><b style="color:#ffd84a">Cel:</b> zbuduj dom w 7 etapach (fundament, ściany, dach, drzwi i okna, wnętrze, piętro, ogród), zbieraj surowce w lesie i przetrwaj noce. Wykonuj misje i wyprawy do obozów!<br><br><b style="color:#ffd84a">Komputer:</b> WASD ruch · Shift bieg · Spacja skok · mysz kamera (kliknij w okno) · LPM akcja (ścinaj, kop, walcz) · E użyj (stół, tablica budowy, ognisko, skrzynia, łóżko) · 1–4 narzędzia · Q pochodnia · F zjedz · I plecak · J misje · V widok z oczu · Esc pauza.<br><br><b style="color:#ffd84a">Telefon:</b> lewy joystick ruch · przeciągnij po ekranie, by obracać kamerę · ⚒ akcja · ✋ użyj · ⬆ skok · 🏃 bieg.<br><br><b style="color:#ffd84a">Pory roku i ciepło:</b> co 5 dni zmienia się pora roku. Pilnuj paska temperatury: ognisko, dom i ubranie (ciepły, jesienny, wiosenny, lekki lub moro) chronią przed zimnem i upałem. Plecak ma limit, więc zostawiaj rzeczy w skrzyni przy domu.<br><br><b style="color:#ffd84a">Wskazówki:</b> przy stole warsztatowym zrobisz deski, cegły, pochodnie, wędkę, włócznię i lepsze narzędzia · tablica budowy stoi przed domem · żelazo jest w górach · w nocy zostań przy ognisku albo w domu z drzwiami · wilki boją się pochodni.</div>'; }
 function openSettings(fromGame) {
   $('panel').classList.remove('hide'); const bd = winShell('Ustawienia', null); const x = bd.parentNode.querySelector('.btn.red'); x.onclick = () => { saveSettings(); if (fromGame) pauseGame(false); else hidePanel(); };
   const row = (id, lbl, min, max, step, val, fmt) => '<div class="set"><label>' + lbl + ' <span id="' + id + 'v">' + fmt(val) + '</span></label><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"></div>';
@@ -913,10 +936,12 @@ function seasonTargetTemp() {
 }
 function clothingBonus() {
   const s = currentSeason(), w = P.worn;
-  if (!w) return 0;
+  if (!w || !(P.inv[w] > 0)) return 0;
   if (w === 'clothW') return (s === 3) ? 16 : (s === 2) ? 12 : 4;
   if (w === 'clothL') return (s === 1) ? 10 : (s === 0) ? 6 : 2;
   if (w === 'clothH') return (s === 0) ? 8 : (s === 1) ? 5 : 0;
+  if (w === 'clothA') return (s === 2) ? 12 : (s === 3) ? 8 : (s === 0) ? 5 : 1;
+  if (w === 'clothM') return (s === 2) ? 7 : (s === 0) ? 6 : (s === 1) ? 4 : 3;
   return 0;
 }
 function nearFireWarmth() {
@@ -932,20 +957,70 @@ function updateTemperature(dt) {
     P.stam = Math.max(0, P.stam - dt * 8);
     if (P.temp < -5) { P.coldDmgT = (P.coldDmgT || 0) + dt; if (P.coldDmgT > 4) { P.coldDmgT = 0; hurtPlayer(4, null); toast('🥶 Marzniesz! Idź do ogniska lub ubierz się!'); } }
   } else P.coldDmgT = 0;
-  if (hot) { P.hunger = Math.max(0, P.hunger - dt * 0.2); }
+  if (hot) { P.hunger = Math.max(0, P.hunger - dt * 0.2); P.stam = Math.max(0, P.stam - dt * 4); if (!P._hotMsg) { P._hotMsg = 1; toast('🥵 Upał! Odpocznij w cieniu lub w wodzie.'); } } else P._hotMsg = 0; if (P.temp < 5) P.hunger = Math.max(0, P.hunger - dt * 0.05);
+  { const cs = currentSeason(); if (G._cs !== undefined && G._cs !== cs && G.state === 'play') toast(SEA_HINT[cs], 5200); G._cs = cs; }
 }
+
+
+/* ====== SEASONS: look of the world, particles, stash ====== */
+const BULK = ['wood', 'plank', 'stone', 'brick', 'iron', 'coal'];
+const capMax = () => 100 + 80 * Math.min(2, P.inv.bag || 0) + (HS.stage >= 6 ? 40 : 0);
+const capUsed = () => BULK.reduce((a, k) => a + (P.inv[k] || 0), 0);
+const capLeft = () => capMax() - capUsed();
+const SEAKF = [
+  { leaf: [0.42, 0.9, 0.4], la: 0.30, terr: [0.4, 0.88, 0.38], ta: 0.25, snow: 0, aut: 0, sun: 1.0, fog: [0, 0.01, 0] },
+  { leaf: [0.5, 0.85, 0.2], la: 0.28, terr: [0.72, 0.86, 0.3], ta: 0.32, snow: 0, aut: 0, sun: 1.06, fog: [0.01, 0.01, -0.01] },
+  { leaf: [0.9, 0.5, 0.15], la: 0.9, terr: [0.62, 0.5, 0.24], ta: 0.6, snow: 0, aut: 1, sun: 0.95, fog: [0.04, 0.0, -0.03] },
+  { leaf: [0.42, 0.36, 0.3], la: 0.85, terr: [0.8, 0.85, 0.9], ta: 0.0, snow: 1, aut: 0, sun: 0.88, fog: [-0.02, 0.0, 0.04] }];
+const SEA = { leaf: [0.4, 0.9, 0.4], la: 0.3, terr: [0.4, 0.88, 0.38], ta: 0.25, snow: 0, aut: 0, sun: 1, fog: [0, 0, 0], pt: 'none' };
+function seasonPhase() { return ((((G.day - 1) + G.dayT) / 20) % 1) * 4; }
+function updateSeason() {
+  const ph = seasonPhase(), i = Math.floor(ph) % 4, f = ph - Math.floor(ph), j = (i + 1) % 4, a = SEAKF[i], b = SEAKF[j], u = clamp((f - 0.78) / 0.22, 0, 1), t = u * u * (3 - 2 * u);
+  for (const k of ['leaf', 'terr', 'fog']) for (let c = 0; c < 3; c++) SEA[k][c] = lerp(a[k][c], b[k][c], t);
+  for (const k of ['la', 'ta', 'snow', 'aut', 'sun']) SEA[k] = lerp(a[k], b[k], t);
+  SEA.pt = SEA.snow > 0.3 ? 'snow' : SEA.aut > 0.5 ? 'leaf' : 'none';
+}
+const SEAP = []; for (let i = 0; i < 160; i++) SEAP.push({ wx: Math.random() * 48, wz: Math.random() * 48, y: Math.random(), s: 0.6 + Math.random(), p: Math.random() * 6.28, h: Math.random() });
+function drawSeasonParts(dt, t) {
+  if (SEA.pt === 'none') return; const snow = SEA.pt === 'snow', n = snow ? Math.floor(160 * SEA.snow) : Math.floor(80 * Math.min(1, SEA.aut));
+  for (let i = 0; i < n; i++) {
+    const q = SEAP[i]; q.y -= dt * (snow ? 0.1 : 0.05) * q.s; if (q.y < 0) q.y += 1; q.wx += Math.sin(t * 0.8 + q.p) * dt * (snow ? 0.7 : 1.4); q.wz += Math.cos(t * 0.6 + q.p) * dt * 0.5;
+    const dx = (((q.wx - cam.x) % 48) + 72) % 48 - 24, dz = (((q.wz - cam.z) % 48) + 72) % 48 - 24, px = cam.x + dx, pz = cam.z + dz, py = cam.y - 9 + q.y * 24; if (py < heightAt(px, pz)) continue; if (HS.stage >= 3 && houseInside(px, pz) && py < WR.y0 + 5) continue;
+    const m = [1, 0, 0, px, 0, 1, 0, py, 0, 0, 1, pz]; if (snow) dynO.box(m, 0.045 * q.s, 0.045 * q.s, 0.045 * q.s, [1, 1, 1], 0.4, 1); else { const c = q.h < 0.4 ? [0.95, 0.55, 0.12] : q.h < 0.75 ? [0.8, 0.22, 0.1] : [0.92, 0.78, 0.2]; dynO.box(mm(m, MRY(t + q.p)), 0.09, 0.015, 0.06, c, 0.2, 1); }
+  }
+}
+const STASHABLE = ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew', 'hotdrink', 'clothL', 'clothW', 'clothH', 'clothA', 'clothM'];
+function moveStash(k, n, toStash) {
+  if (toStash) { n = Math.min(n, P.inv[k] || 0); if (n <= 0) return; P.inv[k] -= n; G.stash[k] = (G.stash[k] || 0) + n; }
+  else { n = Math.min(n, G.stash[k] || 0); if (BULK.indexOf(k) >= 0) n = Math.min(n, capLeft()); if (n <= 0) { if (BULK.indexOf(k) >= 0) toast('🎒 Plecak pełny!'); return; } G.stash[k] -= n; P.inv[k] = (P.inv[k] || 0) + n; }
+  sfx.click(); refreshHud();
+}
+const haveS = k => (P.inv[k] || 0) + ((G.stash || {})[k] || 0);
+const hasAllS = c => Object.keys(c).every(k => haveS(k) >= c[k]);
+function takeResS(c) { if (!hasAllS(c)) return false; for (const k in c) { let n = c[k]; const a = Math.min(n, P.inv[k] || 0); P.inv[k] = (P.inv[k] || 0) - a; n -= a; if (n > 0) G.stash[k] -= n; } refreshHud(); return true; }
+const costHtmlS = c => Object.keys(c).map(k => '<span class="cost ' + (haveS(k) >= c[k] ? 'yes' : 'no') + '">' + RES[k][0] + ' ' + haveS(k) + '/' + c[k] + '</span>').join('');
+function openStash() {
+  G.ui = 'stash'; showPanel(); const bd = winShell('Skrzynia w domu', mainTabs('stash'));
+  let h = '<div style="font-size:13px;color:#d8c8a8;margin-bottom:6px">Plecak: <b>' + capUsed() + '/' + capMax() + '</b> miejsca na surowce. Rzeczy w skrzyni nie giną po śmierci i można z nich budować dom.</div>';
+  for (const k of STASHABLE) { const a = P.inv[k] || 0, b = G.stash[k] || 0; if (!a && !b) continue;
+    h += '<div class="stage"><div class="tx"><b>' + RES[k][0] + ' ' + RES[k][1] + '</b>plecak: ' + a + ' · skrzynia: ' + b + '</div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:62%"><div class="btn sm" data-s="' + k + '" data-n="1" data-d="1">→1</div><div class="btn sm" data-s="' + k + '" data-n="10" data-d="1">→10</div><div class="btn sm green" data-s="' + k + '" data-n="9999" data-d="1">→ wszystko</div><div class="btn sm" data-s="' + k + '" data-n="1" data-d="0">←1</div><div class="btn sm" data-s="' + k + '" data-n="10" data-d="0">←10</div><div class="btn sm green" data-s="' + k + '" data-n="9999" data-d="0">← wszystko</div></div></div>'; }
+  if (h.indexOf('class="stage"') < 0) h += '<div style="color:#c8b898">Nic tu jeszcze nie ma. Zbierz surowce w lesie.</div>';
+  bd.innerHTML = h; bd.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { moveStash(b.dataset.s, +b.dataset.n, b.dataset.d === '1'); openStash(); });
+}
+const SEA_HINT = ['🌸 Wiosna! Jagody i grzyby znów rosną.', '☀️ Lato! Upał męczy: lekki strój i woda pomagają.', '🍂 Jesień! Chłodniej: zrób jesienny lub ciepły strój.', '❄️ Zima! Mróz: ciepły strój, ognisko i dom ratują życie.'];
 
 /* ====== MAIN LOOP, INPUT, BOOT ====== */
 let lastT = 0, fpsA = 0, fpsN = 0, titleT = 0;
 const dayFactor = t => t < 0.55 ? 1 : t < 0.68 ? 1 - (t - 0.55) / 0.13 : t < 0.92 ? 0 : (t - 0.92) / 0.08;
 function updateSky(dt) {
-  G.dayT = (G.dayT + dt / DAYLEN) % 1; const f = dayFactor(G.dayT), glow = f > 0 && f < 1 ? 1 - Math.abs(f - 0.5) * 2 : 0; LIGHT.f = f;
+  { const pv = G.dayT; G.dayT = (G.dayT + dt / DAYLEN) % 1; if (G.dayT < pv) G.day++; } const f = dayFactor(G.dayT), glow = f > 0 && f < 1 ? 1 - Math.abs(f - 0.5) * 2 : 0; LIGHT.f = f;
   LIGHT.sunI = 0.12 + 1.03 * f; LIGHT.hemiI = 0.24 + 0.38 * f; LIGHT.fillI = 0.08 + 0.22 * f; const dc = [1.0, 0.941, 0.824], sc = [1.0, 0.604, 0.353]; LIGHT.sunC = [lerp(dc[0], sc[0], glow * 0.8), lerp(dc[1], sc[1], glow * 0.8), lerp(dc[2], sc[2], glow * 0.8)];
   const nb = [0.043, 0.078, 0.188], db = [0.812, 0.918, 1.0]; SKYST.fog = [lerp(nb[0], db[0], f), lerp(nb[1], db[1], f), lerp(nb[2], db[2], f)]; SKYST.night = 1 - f; SKYST.bright = f; SKYST.skyK = [0.16 + 0.84 * f, 0.2 + 0.8 * f, 0.34 + 0.66 * f]; SKYST.fogK = (210 - 60 * (1 - f)) / 210;
+  updateSeason(); LIGHT.sunI *= SEA.sun; for (let c = 0; c < 3; c++) SKYST.fog[c] = clamp(SKYST.fog[c] + SEA.fog[c] * f, 0, 1);
 }
 function drawPlayer() {
   if (P.fp && !P.dead) return; const tier = k => P.tools[k] || 1; const hc = [[0, 0, 0], [0.62, 0.46, 0.26], [0.6, 0.6, 0.63], [0.86, 0.86, 0.92]]; let tool = P.fish ? 'rod' : P.torchOn ? 'torch' : P.sel; if (tool !== 'torch' && tool !== 'rod' && !P.tools[tool]) tool = 'axe'; const head = (tool === 'axe' || tool === 'pick') ? hc[tier(tool)] : null;
-  const y = P.sleeping > 0.1 ? P.y - 0.0 : P.y; drawHuman(P.x, y, P.z, P.yaw, P.anim, { tool, head, shade: P.hurtT > 0 ? 1.4 : 1 }); blobShadow(P.x, P.z, 0.55, P.y);
+  const y = P.sleeping > 0.1 ? P.y - 0.0 : P.y; drawHuman(P.x, y, P.z, P.yaw, P.anim, { tool, head, outfit: (P.worn && P.inv[P.worn] > 0) ? P.worn : null, shade: P.hurtT > 0 ? 1.4 : 1 }); blobShadow(P.x, P.z, 0.55, P.y);
   if (P.fish) { const f = P.fish; const hx = P.x + Math.sin(P.yaw) * 0.9, hz = P.z + Math.cos(P.yaw) * 0.9, hy = P.y + 1.9; const by = WR.waterY + 0.05 + (f.bite > 0 ? Math.sin(glTime * 30) * 0.06 - 0.08 : Math.sin(glTime * 2) * 0.02); const m = [1, 0, 0, f.x, 0, 1, 0, by, 0, 0, 1, f.z]; dynO.box(m, 0.09, 0.09, 0.09, [0.95, 0.2, 0.2], 0.3); dynO.box([1, 0, 0, f.x, 0, 1, 0, by + 0.1, 0, 0, 1, f.z], 0.06, 0.06, 0.06, [1, 1, 1], 0.3); for (let i = 1; i < 10; i++) { const u = i / 10, x = lerp(hx, f.x, u), z = lerp(hz, f.z, u), yy = lerp(hy, by, u) - Math.sin(u * 3.14) * 0.9; dynO.box([1, 0, 0, x, 0, 1, 0, yy, 0, 0, 1, z], 0.015, 0.015, 0.015, [0.95, 0.95, 0.9], 0); } }
 }
 function drawTargetMarker(t) { const T = TARGET; if (!T || T.kind === 'wolf' || G.ui || G.paused || P.dead) return; let y = groundAt(T.x, T.z) + 2.7; if (T.kind === 'node') { y = T.ref.y + (T.ref.tree ? 5.0 : 2.6); } else if (T.kind === 'bench') y += 0.2; const bob = Math.sin(t * 4) * 0.12; const m1 = mm(MT(T.x, y + bob, T.z), mm(MRY(t * 2), MRZ(0.78))); dynO.box(mm(m1, MRX(0.78)), 0.17, 0.17, 0.17, [1, 0.85, 0.2], 1, 1); }
@@ -957,7 +1032,7 @@ function frame(now) {
   if (sim) { updateSky(P.sleeping > 0 ? dt * 0.3 : dt); G.time += dt; if (G.gardenT > 0) G.gardenT -= dt; }
   if (sim) { updatePlayer(dt); if (!P.dead) survivalTick(dt); updateFishing(dt); updateWolves(dt); updateAnimals(dt); updateNodes(dt); updateParts(dt); updateHouse(dt); questTick(dt); musicTick(dt); }
   if (run && !P.dead) { TARGET = findTarget(); P.prompt = promptFor(TARGET); if (act.act) doAction(); } else { TARGET = null; P.prompt = null; }
-  drawPlayer(); drawTargetMarker(t); drawAnimals(); drawWolves(); drawFires(t); drawParts(); updateClouds(dt); sortLights(); SHC.x = P.x; SHC.y = P.y; SHC.z = P.z; renderScene(dt, t); updateHUD(dt);
+  drawPlayer(); drawTargetMarker(t); drawAnimals(); drawWolves(); drawFires(t); drawParts(); drawSeasonParts(dt, t); updateClouds(dt); sortLights(); SHC.x = P.x; SHC.y = P.y; SHC.z = P.z; renderScene(dt, t); updateHUD(dt);
   if (sim && performance.now() - G.lastSave > 45000) { G.lastSave = performance.now(); saveGame(true); }
 }
 function sortLights() { LIGHTS.sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z)); if (LIGHTS.length > 8) LIGHTS.length = 8; }
