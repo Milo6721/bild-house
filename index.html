@@ -114,11 +114,13 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
  #qtrack{top:calc(38px + env(safe-area-inset-top));width:42vw;font-size:11px;padding:6px 8px;max-height:112px;overflow:hidden}
  .tb.sq{top:calc(84px + env(safe-area-inset-top));width:44px;height:44px;font-size:19px}
  #bars{width:min(300px,64vw)}
+ #compass{left:8px;top:calc(136px + env(safe-area-inset-top));transform:none;width:64px}
 }
 @media (max-height:520px) and (min-width:621px){ #qtrack{width:30vw;font-size:11px} }
 
 .b.temp u{background:linear-gradient(#6af,#38f)}.b.temp.cold u{background:linear-gradient(#8af,#26c)}.b.temp.hot u{background:linear-gradient(#fa6,#f60)}
 #inv-tabs{display:flex;gap:4px;margin-bottom:8px}.inv-tab{background:#1a1510;border:2px solid #4a4238;border-radius:4px;padding:3px 10px;font-size:13px;font-weight:800;cursor:pointer}.inv-tab.on{border-color:#ffd84a;color:#ffd84a}
+#compass{position:absolute;left:50%;top:calc(42px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}#compass i{width:40px;height:40px;border-radius:50%;background:#000a;border:2px solid #d8b86a;position:relative;display:block}#compass i:after{content:'';position:absolute;left:50%;top:4px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:16px solid #ff6a5a;transform:translateX(-50%)}#compass span{font-size:11px;font-weight:800;text-shadow:0 1px 2px #000;margin-top:2px}
 .season-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-weight:800;font-size:12px;margin-left:6px}
 </style></head>
 <body><canvas id="gl"></canvas>
@@ -458,14 +460,82 @@ function buildHouseMeshes() {
     for (const o of OPS.back) winf((o.a0 + o.a1) / 2, (o.y0 + o.y1) / 2, -hd + th / 2, o.a1 - o.a0, o.y1 - o.y0, 'x'); for (const sx of [-1, 1]) { const o = OPS.side[0]; winf(sx * (hw - th / 2), (o.y0 + o.y1) / 2, 0, o.a1 - o.a0, o.y1 - o.y0, 'z'); }
     mb.box(0, yb + 1.18, hd - th / 2, 1.75, 2.35, 0.12, [0.62, 0.4, 0.2]); for (let i = 0; i < 3; i++) mb.box(-0.5 + i * 0.5, yb + 1.18, hd - th / 2 + 0.07, 0.04, 2.3, 0.04, [0.45, 0.28, 0.14]); mb.box(0.55, yb + 1.15, hd - th / 2 + 0.1, 0.12, 0.12, 0.1, [0.95, 0.8, 0.3], { emit: 0.2 }); mb.box(0, yb + 2.1, hd - th / 2 + 0.07, 1.2, 0.45, 0.04, C_GLASS, { emit: 0.3 });
     mb.box(1.75, yb + 2.3, hd + 0.25, 0.2, 0.34, 0.2, [1, 0.85, 0.5], { emit: 1 }); mb.box(1.75, yb + 2.55, hd + 0.2, 0.06, 0.4, 0.06, [0.2, 0.2, 0.2]); mb.box(0, yb + 0.03, hd + 0.9, 1.5, 0.05, 0.9, [0.55, 0.28, 0.2]);
-    // bed (interior)
-    mb.box(-4.1, yb + 0.35, -2.9, 2.0, 0.3, 3.0, C_WOOD); mb.box(-4.1, yb + 0.65, -2.7, 1.8, 0.28, 2.6, [0.96, 0.96, 0.94]); mb.box(-4.1, yb + 0.82, -2.2, 1.78, 0.12, 1.6, [0.82, 0.2, 0.22]); mb.box(-4.1, yb + 0.85, -3.8, 1.2, 0.2, 0.6, [1, 1, 1]); mb.box(-4.1, yb + 0.9, -4.28, 2.0, 1.2, 0.12, C_WOOD); reg('s4', mb); }
-  { const mb = new MeshB(); const yb = HY; // kitchen, table, fireplace, rug, shelves
-    mb.box(3.8, yb + 0.5, -3.6, 4.0, 1.0, 1.0, [0.78, 0.62, 0.42]); mb.box(3.8, yb + 1.03, -3.6, 4.1, 0.08, 1.1, [0.3, 0.3, 0.32]); mb.box(2.6, yb + 1.1, -3.6, 0.9, 0.05, 0.9, [0.15, 0.15, 0.17]); for (const dx of [-0.2, 0.2]) mb.cyl(2.6 + dx, yb + 1.12, -3.6, 0.2, 0.2, 0.04, 8, [0.3, 0.3, 0.3]); mb.box(4.6, yb + 1.3, -3.7, 0.5, 0.5, 0.5, [0.85, 0.85, 0.88]); mb.box(5.0, yb + 1.9, -4.05, 1.4, 0.8, 0.3, C_WOOD);
-    mb.box(0.2, yb + 0.55, 0.4, 2.2, 0.12, 1.4, C_WOOD, {}); for (const [dx, dz] of [[-1, -0.6], [1, -0.6], [-1, 0.6], [1, 0.6]]) mb.box(0.2 + dx, yb + 0.25, 0.4 + dz, 0.12, 0.5, 0.12, C_WOOD); for (const dx of [-0.7, 0.9]) { mb.box(0.2 + dx, yb + 0.3, 1.5, 0.5, 0.1, 0.5, C_WOOD); mb.box(0.2 + dx, yb + 0.6, 1.72, 0.5, 0.5, 0.08, C_WOOD); mb.box(0.2 + dx, yb + 0.3, -0.7, 0.5, 0.1, 0.5, C_WOOD); } mb.cyl(0.2, yb + 0.62, 0.4, 0.2, 0.28, 0.3, 6, [0.8, 0.8, 0.85]); mb.sphere(0.2, yb + 1.0, 0.4, 0.14, 0.14, 0.14, [0.85, 0.2, 0.25], 2, 5, { emit: 0.1 });
-    mb.box(5.5, yb + 1.1, 0.3, 0.6, 2.2, 2.0, [0.58, 0.56, 0.54]); mb.box(5.15, yb + 0.55, 0.3, 0.1, 0.8, 1.2, [0.1, 0.07, 0.06]); mb.box(5.1, yb + 0.4, 0.3, 0.12, 0.45, 0.7, [1, 0.55, 0.15], { emit: 1 }); mb.box(5.1, yb + 0.7, 0.3, 0.1, 0.25, 0.4, [1, 0.85, 0.3], { emit: 1 });
-    mb.box(-0.5, yb + 0.04, 2.6, 3.4, 0.05, 2.2, [0.22, 0.35, 0.62]); mb.box(-0.5, yb + 0.06, 2.6, 2.6, 0.05, 1.5, [0.9, 0.78, 0.35]); mb.box(-5.55, yb + 1.3, 1.2, 0.3, 0.1, 2.6, C_WOOD); mb.box(-5.55, yb + 2.0, 1.2, 0.3, 0.1, 2.6, C_WOOD); for (let i = 0; i < 6; i++) mb.box(-5.55, yb + 1.45 + (i % 2) * 0.7, 0.2 + i * 0.4, 0.22, 0.28, 0.2, [[0.8, 0.2, 0.2], [0.2, 0.5, 0.8], [0.9, 0.7, 0.2], [0.3, 0.7, 0.35]][i % 4]);
-    mb.box(0.4, yb + WH_ - 0.5, -0.5, 0.05, 1.0, 0.05, [0.2, 0.2, 0.2]); mb.sphere(0.4, yb + WH_ - 1.0, -0.5, 0.3, 0.26, 0.3, [1, 0.88, 0.55], 3, 6, { emit: 1 }); reg('s5', mb); }
+    // ===== wnętrze, etap 4: sypialnia, szafa, zasłony, kącik survivalowy =====
+    const F = HY + 0.07, B = (x, y, z, w, h, d, c, o) => mb.box(x, F + y, z, w, h, d, c, o), RED = [0.78, 0.2, 0.2], CRM = [0.953, 0.918, 0.847], DKW = [0.45, 0.3, 0.17], LTW = [0.74, 0.54, 0.31], PNL = [0.6, 0.42, 0.24], GOLD = [0.95, 0.8, 0.25], BLU = [0.25, 0.45, 0.75], STEEL = [0.62, 0.64, 0.68], LAMP = [1, 0.9, 0.62], GRN = [0.247, 0.682, 0.353], TERRA = [0.76, 0.4, 0.25];
+    for (let i = 0; i < 15; i++) B(0, 0.009, -4.1 + i * 0.58, 11.5, 0.012, 0.03, [0.74, 0.53, 0.3]);
+    B(0, 0.45, -4.15, 11.4, 0.9, 0.06, PNL); B(-5.65, 0.45, 0, 0.06, 0.9, 8.2, PNL); B(5.65, 0.45, 0, 0.06, 0.9, 8.2, PNL); B(-3.3, 0.45, 4.15, 4.6, 0.9, 0.06, PNL); B(3.3, 0.45, 4.15, 4.6, 0.9, 0.06, PNL);
+    B(0, 0.93, -4.14, 11.4, 0.05, 0.09, DKW); B(-5.64, 0.93, 0, 0.09, 0.05, 8.2, DKW); B(5.64, 0.93, 0, 0.09, 0.05, 8.2, DKW); B(-3.3, 0.93, 4.14, 4.6, 0.05, 0.09, DKW); B(3.3, 0.93, 4.14, 4.6, 0.05, 0.09, DKW);
+    // łóżko z baldachimem zagłówka, narzutą w paski i poduszkami
+    const bx = -4.52, bz = -2.6; B(bx, 0.22, bz, 2.2, 0.44, 2.9, LTW); B(bx, 0.52, bz + 0.05, 2.0, 0.22, 2.7, [0.97, 0.97, 0.95]); B(bx, 0.66, bz + 0.5, 2.04, 0.1, 1.75, RED); for (let i = 0; i < 4; i++) B(bx, 0.72, bz + 0.15 + i * 0.42, 2.06, 0.02, 0.09, CRM);
+    B(bx - 0.5, 0.72, bz - 1.1, 0.8, 0.17, 0.5, [1, 1, 1]); B(bx + 0.5, 0.72, bz - 1.1, 0.8, 0.17, 0.5, [0.85, 0.92, 1]); B(bx, 1.05, -4.1, 2.4, 1.5, 0.12, DKW); B(bx, 1.86, -4.1, 2.55, 0.12, 0.16, LTW); B(bx - 1.15, 0.95, -4.1, 0.14, 1.9, 0.16, LTW); B(bx + 1.15, 0.95, -4.1, 0.14, 1.9, 0.16, LTW); B(bx, 0.42, bz + 1.5, 2.2, 0.56, 0.1, LTW);
+    B(-3.0, 0.3, -3.85, 0.6, 0.6, 0.6, LTW); B(-3.0, 0.36, -3.54, 0.46, 0.02, 0.02, DKW); B(-3.0, 0.3, -3.54, 0.06, 0.06, 0.03, GOLD); mb.cyl(-3.0, F + 0.6, -3.85, 0.1, 0.06, 0.18, 7, DKW); mb.cyl(-3.0, F + 0.78, -3.85, 0.2, 0.14, 0.3, 8, LAMP, { emit: 0.9 });
+    B(-2.55, 0.015, -2.4, 1.3, 0.03, 2.7, CRM); B(-2.55, 0.02, -2.4, 1.1, 0.03, 2.5, BLU); B(-2.55, 0.03, -2.4, 0.5, 0.03, 0.5, GOLD, { ry: 0.785 });
+    // szafa
+    B(-5.25, 1.15, 2.4, 0.85, 2.3, 1.7, LTW); B(-5.25, 2.34, 2.4, 0.95, 0.12, 1.8, DKW); B(-4.81, 1.1, 2.4, 0.02, 2.1, 0.03, DKW); B(-4.8, 1.0, 2.25, 0.04, 0.2, 0.05, GOLD); B(-4.8, 1.0, 2.55, 0.04, 0.2, 0.05, GOLD); B(-4.81, 1.1, 2.4, 0.02, 0.03, 1.5, DKW);
+    // zasłony
+    const curtX = (cx, cz, w) => { B(cx, 2.4, cz, w + 0.34, 0.04, 0.04, GOLD); for (const sg of [-1, 1]) { B(cx + sg * (w / 2 + 0.12), 1.55, cz, 0.34, 1.55, 0.07, RED); B(cx + sg * (w / 2 + 0.12), 1.4, cz - 0.03, 0.37, 0.05, 0.09, CRM); } };
+    const curtZ = (cx, cz, w) => { B(cx, 2.4, cz, 0.04, 0.04, w + 0.34, GOLD); for (const sg of [-1, 1]) { B(cx, 1.55, cz + sg * (w / 2 + 0.12), 0.07, 1.55, 0.34, RED); B(cx + (cx < 0 ? 0.03 : -0.03), 1.4, cz + sg * (w / 2 + 0.12), 0.09, 0.05, 0.37, CRM); } };
+    curtX(-3.6, 4.1, 1.6); curtX(3.6, 4.1, 1.6); curtX(0, -4.1, 2.0); curtZ(-5.6, 0, 2.0); curtZ(5.6, 0, 2.0);
+    // kącik survivalowy przy drzwiach: tablica z lina, latarka, krzesiwo, latarnia, kompas, siekiera
+    B(1.9, 1.55, 4.12, 1.6, 1.3, 0.06, DKW); B(1.9, 2.22, 4.1, 1.7, 0.05, 0.1, LTW); B(1.9, 0.9, 4.1, 1.7, 0.05, 0.1, LTW);
+    B(1.4, 1.92, 4.07, 0.44, 0.44, 0.06, [0.8, 0.67, 0.42]); B(1.4, 1.92, 4.06, 0.2, 0.2, 0.08, DKW); B(1.4, 1.92, 4.05, 0.46, 0.05, 0.07, [0.7, 0.56, 0.32]);
+    B(2.0, 1.95, 4.06, 0.55, 0.13, 0.13, [0.22, 0.22, 0.27]); B(2.3, 1.95, 4.06, 0.07, 0.17, 0.17, [1, 0.96, 0.7], { emit: 0.9 }); B(1.8, 1.95, 4.06, 0.06, 0.15, 0.15, RED);
+    B(2.5, 1.95, 4.07, 0.24, 0.1, 0.04, STEEL); B(2.5, 1.86, 4.07, 0.12, 0.1, 0.05, [0.2, 0.2, 0.22]); B(2.44, 1.9, 4.04, 0.04, 0.04, 0.03, [1, 0.8, 0.2], { emit: 1 });
+    B(1.4, 1.22, 4.06, 0.24, 0.32, 0.24, [0.15, 0.13, 0.1]); B(1.4, 1.22, 4.06, 0.17, 0.24, 0.17, LAMP, { emit: 1 }); B(1.4, 1.43, 4.06, 0.06, 0.1, 0.06, [0.15, 0.13, 0.1]);
+    B(2.0, 1.22, 4.07, 0.3, 0.3, 0.05, [0.78, 0.6, 0.2]); B(2.0, 1.22, 4.04, 0.22, 0.22, 0.04, [0.2, 0.4, 0.75], { emit: 0.4 }); B(2.0, 1.22, 4.02, 0.02, 0.18, 0.02, RED);
+    B(2.5, 1.2, 4.07, 0.07, 0.62, 0.04, DKW); B(2.5, 1.47, 4.07, 0.24, 0.14, 0.04, STEEL);
+    B(1.9, 0.28, 3.7, 1.0, 0.56, 0.55, LTW); B(1.9, 0.58, 3.7, 1.06, 0.06, 0.6, DKW); B(1.9, 0.3, 3.42, 0.9, 0.04, 0.03, DKW); B(1.9, 0.45, 3.42, 0.2, 0.08, 0.04, [0.8, 0.67, 0.42]);
+    // wieszak z kurtką, plecak i buty
+    mb.cyl(-1.8, F, 3.85, 0.05, 0.04, 2.0, 6, DKW); mb.cyl(-1.8, F, 3.85, 0.22, 0.22, 0.05, 8, DKW); for (const [dx, dz] of [[-0.12, 0], [0.12, 0], [0, 0.12]]) B(-1.8 + dx, 1.85, 3.85 + dz, 0.05, 0.05, 0.12, GOLD);
+    B(-1.8, 1.25, 3.72, 0.5, 0.85, 0.14, RED); B(-1.8, 1.7, 3.72, 0.3, 0.12, 0.15, CRM);
+    B(-2.4, 0.4, 3.7, 0.55, 0.75, 0.38, [0.55, 0.38, 0.2]); B(-2.4, 0.55, 3.5, 0.5, 0.35, 0.05, [0.46, 0.31, 0.16]); B(-2.4, 0.78, 3.7, 0.57, 0.1, 0.4, [0.46, 0.31, 0.16]); B(-2.22, 0.45, 3.5, 0.05, 0.5, 0.03, DKW); B(-2.58, 0.45, 3.5, 0.05, 0.5, 0.03, DKW);
+    B(-1.25, 0.1, 3.85, 0.18, 0.2, 0.34, [0.35, 0.22, 0.12]); B(-1.0, 0.1, 3.9, 0.18, 0.2, 0.34, [0.35, 0.22, 0.12]);
+    // obrazek nad łóżkiem
+    B(-5.63, 1.8, -2.6, 0.04, 0.7, 1.0, GOLD); B(-5.61, 1.8, -2.6, 0.05, 0.56, 0.86, [0.55, 0.78, 0.96]); B(-5.6, 1.62, -2.6, 0.05, 0.22, 0.86, GRN); B(-5.59, 1.95, -2.4, 0.05, 0.3, 0.26, [1, 1, 1], { ry: 0 });
+    // tapeta w kolorze szałwii (z otworami na okna i drzwi) i ciemniejsza podłoga
+    { const SAGE = [0.5, 0.66, 0.58], yb2 = F + 0.95, yt2 = F + 3.12; B(0, 0.003, 0, 11.4, 0.01, 8.2, [0.48, 0.31, 0.16]);
+      wallPieces(mb, 'x', -4.165, -5.65, 5.65, yb2, yt2, 0.02, OPS.back, SAGE); wallPieces(mb, 'x', 4.165, -5.65, 5.65, yb2, yt2, 0.02, OPS.front, SAGE);
+      wallPieces(mb, 'z', -5.665, -4.15, 4.15, yb2, yt2, 0.02, OPS.side, SAGE); wallPieces(mb, 'z', 5.665, -4.15, 4.15, yb2, yt2, 0.02, OPS.side, SAGE); }
+    reg('s4', mb); }
+  { const mb = new MeshB(); mb.jit = 0.05; // ===== wnętrze, etap 5: kuchnia, jadalnia, kominek, salon, regał =====
+    const F = HY + 0.07, B = (x, y, z, w, h, d, c, o) => mb.box(x, F + y, z, w, h, d, c, o), RED = [0.78, 0.2, 0.2], CRM = [0.953, 0.918, 0.847], DKW = [0.45, 0.3, 0.17], LTW = [0.74, 0.54, 0.31], GOLD = [0.95, 0.8, 0.25], BLU = [0.25, 0.45, 0.75], STEEL = [0.7, 0.72, 0.76], LAMP = [1, 0.9, 0.62], GRN = [0.247, 0.682, 0.353], TERRA = [0.76, 0.4, 0.25], STN = [0.557, 0.573, 0.608], ORG = [0.78, 0.38, 0.18], ORG2 = [0.68, 0.3, 0.14];
+    const rnd = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+    // kuchnia
+    B(2.95, 0.45, -3.78, 3.9, 0.9, 0.8, [0.93, 0.88, 0.76]); B(2.95, 0.93, -3.78, 4.0, 0.07, 0.86, [0.32, 0.32, 0.36]); for (let i = 0; i < 5; i++) { B(1.1 + i * 0.9, 0.45, -3.37, 0.025, 0.8, 0.02, [0.55, 0.4, 0.25]); B(1.3 + i * 0.9, 0.62, -3.36, 0.05, 0.05, 0.04, GOLD); }
+    B(1.9, 0.97, -3.78, 0.8, 0.04, 0.7, [0.1, 0.1, 0.12]); mb.cyl(1.7, F + 0.99, -3.9, 0.14, 0.14, 0.02, 8, [0.2, 0.2, 0.22]); mb.cyl(2.1, F + 0.99, -3.9, 0.14, 0.14, 0.02, 8, [0.9, 0.3, 0.1], { emit: 0.35 }); B(1.9, 0.45, -3.36, 0.7, 0.5, 0.02, [0.12, 0.1, 0.1]); B(1.9, 0.45, -3.35, 0.5, 0.3, 0.02, [1, 0.6, 0.2], { emit: 0.4 });
+    mb.cyl(1.7, F + 1.0, -3.9, 0.2, 0.2, 0.24, 8, STEEL); mb.cyl(1.7, F + 1.24, -3.9, 0.21, 0.21, 0.04, 8, [0.5, 0.5, 0.54]); B(2.15, 1.1, -3.9, 0.22, 0.2, 0.2, RED); B(1.9, 2.05, -4.0, 0.95, 0.34, 0.5, STEEL); mb.cyl(1.9, F + 2.2, -4.0, 0.12, 0.12, 0.7, 6, STEEL);
+    B(2.85, 1.65, -4.02, 0.8, 0.04, 0.3, LTW); for (let i = 0; i < 3; i++) mb.cyl(2.6 + i * 0.25, F + 1.67, -4.02, 0.07, 0.07, 0.2, 6, [[0.8, 0.3, 0.3], [0.3, 0.7, 0.4], [0.9, 0.75, 0.3]][i]); for (let i = 0; i < 3; i++) B(2.55 + i * 0.05, 1.92 + i * 0.05, -4.1, 0.28, 0.03, 0.03, CRM);
+    B(4.0, 0.95, -3.78, 0.95, 0.03, 0.55, [0.62, 0.7, 0.78]); B(4.0, 0.9, -3.78, 0.85, 0.02, 0.47, [0.3, 0.5, 0.7]); mb.cyl(4.0, F + 0.97, -4.08, 0.03, 0.03, 0.3, 5, STEEL); B(4.0, 1.25, -3.95, 0.04, 0.04, 0.24, STEEL);
+    B(5.2, 0.98, -3.78, 0.84, 1.95, 0.8, [0.88, 0.93, 0.97]); B(5.2, 1.4, -3.37, 0.8, 0.02, 0.02, [0.5, 0.55, 0.6]); B(4.84, 1.2, -3.36, 0.05, 0.4, 0.05, [0.3, 0.3, 0.34]); B(4.84, 0.7, -3.36, 0.05, 0.3, 0.05, [0.3, 0.3, 0.34]); B(5.4, 1.75, -3.36, 0.1, 0.1, 0.02, [0.9, 0.3, 0.3]); B(5.0, 1.5, -3.36, 0.12, 0.08, 0.02, [1, 0.85, 0.2]);
+    // jadalnia: stół z obrusem, krzesła, miska z jabłkami, wazon, świeca
+    B(-0.3, 0.78, 0.3, 2.2, 0.07, 1.3, LTW); for (const [dx, dz] of [[-0.95, -0.5], [0.95, -0.5], [-0.95, 0.5], [0.95, 0.5]]) B(-0.3 + dx, 0.38, 0.3 + dz, 0.1, 0.78, 0.1, DKW);
+    B(-0.3, 0.83, 0.3, 2.3, 0.025, 1.4, CRM); for (let i = 0; i < 3; i++) B(-0.3 + (i - 1) * 0.7, 0.84, 0.3, 0.12, 0.012, 1.42, RED);
+    mb.cyl(-0.3, F + 0.85, 0.3, 0.22, 0.16, 0.1, 8, TERRA); for (let i = 0; i < 4; i++) mb.sphere(-0.3 + Math.cos(i * 1.6) * 0.1, F + 0.98, 0.3 + Math.sin(i * 1.6) * 0.1, 0.07, 0.07, 0.07, [0.85, 0.15, 0.15], 3, 5);
+    mb.cyl(0.4, F + 0.85, 0.15, 0.07, 0.09, 0.22, 7, BLU); for (let i = 0; i < 5; i++) { const a = i * 1.26; B(0.4 + Math.cos(a) * 0.05, 1.2 + (i % 2) * 0.04, 0.15 + Math.sin(a) * 0.05, 0.02, 0.2, 0.02, GRN); mb.sphere(0.4 + Math.cos(a) * 0.07, F + 1.32 + (i % 2) * 0.04, 0.15 + Math.sin(a) * 0.07, 0.06, 0.05, 0.06, [[1, 0.435, 0.659], [1, 0.847, 0.29], [1, 1, 1], [0.6, 0.5, 1], [1, 0.5, 0.3]][i], 2, 4, { emit: 0.15 }); }
+    mb.cyl(-0.95, F + 0.85, 0.55, 0.05, 0.05, 0.14, 6, [1, 1, 0.95]); B(-0.95, 1.03, 0.55, 0.05, 0.08, 0.05, [1, 0.8, 0.3], { emit: 1 });
+    const chair = (cx, cz, dir) => { B(cx, 0.45, cz, 0.5, 0.06, 0.5, LTW); for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) B(cx + dx, 0.22, cz + dz, 0.06, 0.44, 0.06, DKW); B(cx, 0.78, cz - 0.22 * dir, 0.5, 0.55, 0.06, LTW); B(cx, 0.5, cz, 0.42, 0.06, 0.42, RED); };
+    chair(-0.8, -0.8, 1); chair(0.2, -0.8, 1); chair(-0.8, 1.4, -1); chair(0.2, 1.4, -1);
+    B(-0.3, 0.015, 0.3, 3.7, 0.03, 2.7, CRM); B(-0.3, 0.02, 0.3, 3.5, 0.03, 2.5, BLU); B(-0.3, 0.03, 0.3, 1.3, 0.03, 1.3, GOLD, { ry: 0.785 }); B(-0.3, 0.035, 0.3, 0.9, 0.03, 0.9, BLU, { ry: 0.785 });
+    // kominek z gzymsem, ogniem, obrazem i koszem na drewno
+    B(5.2, 1.2, 2.55, 0.95, 2.4, 2.2, STN); B(5.2, 1.2, 1.4, 0.97, 2.4, 0.06, [0.45, 0.46, 0.5]); B(5.2, 1.2, 3.7, 0.97, 2.4, 0.06, [0.45, 0.46, 0.5]); B(4.76, 0.45, 2.55, 0.1, 0.85, 1.1, [0.06, 0.05, 0.05]); B(4.71, 0.3, 2.55, 0.12, 0.34, 0.7, [1, 0.5, 0.12], { emit: 1 }); B(4.7, 0.38, 2.55, 0.1, 0.22, 0.4, [1, 0.85, 0.3], { emit: 1 }); B(4.72, 0.1, 2.3, 0.12, 0.1, 0.55, DKW, { ry: 0.2 }); B(4.72, 0.1, 2.8, 0.12, 0.1, 0.55, DKW, { ry: -0.2 });
+    B(4.55, 1.3, 2.55, 0.32, 0.1, 2.4, DKW); mb.cyl(4.55, F + 1.35, 2.0, 0.05, 0.05, 0.16, 6, [1, 1, 0.95]); B(4.55, 1.55, 2.0, 0.05, 0.08, 0.05, [1, 0.8, 0.3], { emit: 1 }); mb.cyl(4.55, F + 1.35, 3.1, 0.05, 0.05, 0.16, 6, [1, 1, 0.95]); B(4.55, 1.55, 3.1, 0.05, 0.08, 0.05, [1, 0.8, 0.3], { emit: 1 });
+    B(4.7, 1.95, 2.55, 0.05, 0.85, 1.25, GOLD); B(4.67, 1.95, 2.55, 0.05, 0.7, 1.1, [0.55, 0.78, 0.96]); B(4.66, 1.77, 2.55, 0.05, 0.3, 1.1, GRN); B(4.65, 2.0, 2.8, 0.05, 0.28, 0.3, [1, 1, 1], { ry: 0 }); B(4.65, 1.9, 2.3, 0.05, 0.4, 0.2, [0.5, 0.52, 0.56]);
+    B(4.25, 0.015, 2.55, 0.9, 0.03, 2.3, [0.4, 0.4, 0.43]); mb.cyl(4.4, F, 1.2, 0.3, 0.3, 0.5, 8, [0.62, 0.45, 0.25]); for (let i = 0; i < 3; i++) B(4.4 + (i - 1) * 0.12, 0.62, 1.2, 0.1, 0.12, 0.5, DKW, { ry: i * 0.5 });
+    // fotel i stolik
+    B(3.4, 0.3, 2.55, 0.95, 0.3, 1.0, ORG); B(2.98, 0.78, 2.55, 0.22, 0.95, 1.0, ORG2); B(3.45, 0.52, 2.0, 0.85, 0.34, 0.2, ORG2); B(3.45, 0.52, 3.1, 0.85, 0.34, 0.2, ORG2); B(3.5, 0.5, 2.55, 0.75, 0.12, 0.8, [0.88, 0.5, 0.25]); for (const [dx, dz] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) B(3.4 + dx, 0.07, 2.55 + dz, 0.07, 0.14, 0.07, DKW);
+    B(3.5, 0.6, 1.2, 0.55, 0.05, 0.55, LTW); for (const [dx, dz] of [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]]) B(3.5 + dx, 0.3, 1.2 + dz, 0.05, 0.6, 0.05, DKW); B(3.45, 0.67, 1.2, 0.28, 0.06, 0.2, RED); B(3.45, 0.72, 1.2, 0.26, 0.04, 0.18, CRM); mb.cyl(3.62, F + 0.63, 1.3, 0.04, 0.04, 0.1, 6, [1, 1, 0.95]); B(3.62, 0.8, 1.3, 0.04, 0.07, 0.04, [1, 0.8, 0.3], { emit: 1 });
+    // regał z książkami i rośliną
+    B(-1.9, 1.15, -3.98, 1.7, 2.3, 0.4, DKW); for (let i = 0; i < 5; i++) B(-1.9, 0.08 + i * 0.55, -3.95, 1.68, 0.05, 0.38, LTW); B(-2.72, 1.15, -3.97, 0.05, 2.3, 0.4, LTW); B(-1.08, 1.15, -3.97, 0.05, 2.3, 0.4, LTW);
+    for (let r = 0; r < 4; r++) for (let i = 0; i < 8; i++) { const n = r * 17 + i * 3.1, h = 0.3 + rnd(n) * 0.14, c = [[0.8, 0.2, 0.2], [0.2, 0.5, 0.8], [0.9, 0.7, 0.2], [0.3, 0.7, 0.35], [0.6, 0.3, 0.7], [0.9, 0.5, 0.2]][Math.floor(rnd(n + 1) * 6)]; if (i === 6 && r === 1) { B(-1.9 + 0.55, 0.08 + r * 0.55 + 0.05, -3.95, 0.3, 0.1, 0.22, CRM); continue; } B(-2.62 + i * 0.19, 0.11 + r * 0.55 + h / 2, -3.96, 0.13, h, 0.24, c); }
+    mb.cyl(-1.3, F + 2.3, -3.95, 0.14, 0.12, 0.2, 7, TERRA); for (let i = 0; i < 4; i++) mb.sphere(-1.3 + (i - 1.5) * 0.08, F + 2.65, -3.95, 0.13, 0.13, 0.13, GRN, 3, 5);
+    // lampa stojąca, rośliny, obrazek
+    mb.cyl(-5.3, F, -0.55, 0.15, 0.15, 0.05, 8, DKW); mb.cyl(-5.3, F, -0.55, 0.035, 0.035, 1.7, 5, DKW); mb.cyl(-5.3, F + 1.55, -0.55, 0.28, 0.2, 0.34, 8, LAMP, { emit: 0.9 });
+    mb.cyl(-5.1, F, 3.75, 0.28, 0.22, 0.4, 8, TERRA); for (let i = 0; i < 7; i++) { const a = i * 0.9; B(-5.1 + Math.cos(a) * 0.12, 0.75 + (i % 3) * 0.25, 3.75 + Math.sin(a) * 0.12, 0.07, 0.7 + (i % 3) * 0.2, 0.07, GRN, { ry: a }); } mb.sphere(-5.1, F + 1.45, 3.75, 0.3, 0.2, 0.3, [0.2, 0.6, 0.3], 3, 6);
+    B(5.62, 1.7, -2.2, 0.04, 0.8, 1.2, GOLD); B(5.6, 1.7, -2.2, 0.05, 0.66, 1.06, [0.97, 0.82, 0.5]); B(5.59, 1.55, -2.2, 0.05, 0.28, 1.06, [0.6, 0.35, 0.2]); mb.sphere(5.58, F + 1.95, -2.2, 0.12, 0.12, 0.12, [1, 0.95, 0.6], 3, 5, { emit: 0.8 });
+    // belki sufitowe i wiszące latarnie
+    
+    
+    reg('s5', mb); }
   { const mb = new MeshB(); mb.jit = 0.05; const yb = HY + WH_ + 0.05, uh = 3.0, yt = yb + uh; mb.box(0, yb, 0, HW + 0.4, 0.22, HD + 0.4, C_BEAM);
     const ops2 = { front: [{ a0: -4.4, a1: -2.8, y0: yb + 0.9, y1: yb + 2.2 }, { a0: -0.8, a1: 0.8, y0: yb + 0.1, y1: yb + 2.3 }, { a0: 2.8, a1: 4.4, y0: yb + 0.9, y1: yb + 2.2 }], back: [{ a0: -3, a1: -1.4, y0: yb + 0.9, y1: yb + 2.2 }, { a0: 1.4, a1: 3, y0: yb + 0.9, y1: yb + 2.2 }], side: [{ a0: -1, a1: 1, y0: yb + 0.9, y1: yb + 2.2 }] };
     wallPieces(mb, 'x', hd - th / 2, -hw + 0.1, hw - 0.1, yb + 0.1, yt, th, ops2.front, C_WALL); wallPieces(mb, 'x', -hd + th / 2, -hw + 0.1, hw - 0.1, yb + 0.1, yt, th, ops2.back, C_WALL); wallPieces(mb, 'z', -hw + th / 2, -hd + 0.1, hd - 0.1, yb + 0.1, yt, th, ops2.side, C_WALL); wallPieces(mb, 'z', hw - th / 2, -hd + 0.1, hd - 0.1, yb + 0.1, yt, th, ops2.side, C_WALL);
@@ -493,13 +563,14 @@ function houseStageMeshVisible(name) { const s = HS.stage, a = HS.anim, an = a ?
 function updateHouse(dt) {
   if (!HS.built) return; const a = HS.anim; if (a) { a.t += dt; if (a.t >= a.dur) { HS.anim = null; for (let i = 0; i < 10; i++) spawnDust(WR.hx + (Math.random() - 0.5) * 12, WR.y0 + 1, WR.hz + (Math.random() - 0.5) * 9); } }
   const aN = HS.anim, p = aN ? clamp(aN.t / aN.dur, 0, 1) : 1; const ease = x => 1 - Math.pow(1 - x, 3), bounce = x => { const t = clamp(x, 0, 1); return 1 - Math.pow(1 - t, 3) * Math.cos(t * 9) ; };
-  for (const name in HS.meshes) { const m = HS.meshes[name]; const vis = houseStageMeshVisible(name); if (!vis) { m.cnt = 0; continue; } let oy = WR.y0, ox = WR.hx, oz = WR.hz; if (aN && ((name === 's' + aN.stage) || (aN.stage === 6 && name === 's3h') || (aN.stage === 3 && name === 's3'))) { if (name === 's3' || name === 's3h') { const q = clamp((p - 0.35) / 0.65, 0, 1); oy += 16 * (1 - bounce(q)); if (q <= 0) { m.cnt = 0; continue; } } else oy -= (name === 's1' ? 2.5 : 7) * (1 - ease(p)); } m.arr[0] = ox; m.arr[1] = oy; m.arr[2] = oz; m.arr[3] = 0; m.arr[4] = 1; m.arr[5] = 1; m.arr[6] = 0; m.arr[7] = 0; setInstances(m, m.arr, 1); }
+  const inH = (G.state === 'play' && HS.stage >= 3 && houseInside(P.x, P.z)); for (const name in HS.meshes) { const m = HS.meshes[name]; const vis = houseStageMeshVisible(name) && !(inH && (name === 's3' || name === 's3h' || name === 's6')); if (!vis) { m.cnt = 0; continue; } let oy = WR.y0, ox = WR.hx, oz = WR.hz; if (aN && ((name === 's' + aN.stage) || (aN.stage === 6 && name === 's3h') || (aN.stage === 3 && name === 's3'))) { if (name === 's3' || name === 's3h') { const q = clamp((p - 0.35) / 0.65, 0, 1); oy += 16 * (1 - bounce(q)); if (q <= 0) { m.cnt = 0; continue; } } else oy -= (name === 's1' ? 2.5 : 7) * (1 - ease(p)); } m.arr[0] = ox; m.arr[1] = oy; m.arr[2] = oz; m.arr[3] = 0; m.arr[4] = 1; m.arr[5] = 1; m.arr[6] = 0; m.arr[7] = 0; setInstances(m, m.arr, 1); }
   houseLights();
 }
-function houseLights() { const k = 0.25 + SKYST.night * 1.0; if (HS.stage >= 4) { LIGHTS.push({ x: WR.hx + 1.75, y: WR.y0 + 3.2, z: WR.hz + 5.0, rad: 11, k }); LIGHTS.push({ x: WR.hx, y: WR.y0 + 3.0, z: WR.hz, rad: 13, k: k * 0.9 }); } if (HS.stage >= 7) { LIGHTS.push({ x: WR.hx - 5.2, y: WR.y0 + 3.0, z: WR.hz + HD / 2 + 3.6, rad: 10, k }); LIGHTS.push({ x: WR.hx + 5.2, y: WR.y0 + 3.0, z: WR.hz + HD / 2 + 3.6, rad: 10, k }); } }
+function houseLights() { const k = 0.25 + SKYST.night * 1.0; if (HS.stage >= 5) { LIGHTS.push({ x: WR.hx + 4.6, y: WR.y0 + 1.7, z: WR.hz + 2.55, rad: 11, k: 0.85 + 0.2 * Math.sin(glTime * 9) }); LIGHTS.push({ x: WR.hx - 0.3, y: WR.y0 + 3.0, z: WR.hz + 0.3, rad: 10, k: 0.75 }); } if (HS.stage >= 4) { LIGHTS.push({ x: WR.hx - 3.0, y: WR.y0 + 1.7, z: WR.hz - 3.85, rad: 6, k: 0.55 }); LIGHTS.push({ x: WR.hx + 1.75, y: WR.y0 + 3.2, z: WR.hz + 5.0, rad: 11, k }); LIGHTS.push({ x: WR.hx, y: WR.y0 + 3.0, z: WR.hz, rad: 13, k: k * 0.9 }); } if (HS.stage >= 7) { LIGHTS.push({ x: WR.hx - 5.2, y: WR.y0 + 3.0, z: WR.hz + HD / 2 + 3.6, rad: 10, k }); LIGHTS.push({ x: WR.hx + 5.2, y: WR.y0 + 3.0, z: WR.hz + HD / 2 + 3.6, rad: 10, k }); } }
 function houseBoxes() { // collision AABBs in world coords [x0,z0,x1,z1]
-  const B_ = []; const hw = HW / 2, hd = HD / 2, t = 0.5, X = WR.hx, Z = WR.hz; if (HS.stage >= 2) { B_.push([X - hw - t / 2, Z - hd - t / 2, X + hw + t / 2, Z - hd + t / 2]); B_.push([X - hw - t / 2, Z - hd, X - hw + t / 2, Z + hd]); B_.push([X + hw - t / 2, Z - hd, X + hw + t / 2, Z + hd]); B_.push([X - hw - t / 2, Z + hd - t / 2, X - 1.0, Z + hd + t / 2]); B_.push([X + 1.0, Z + hd - t / 2, X + hw + t / 2, Z + hd + t / 2]); if (HS.stage < 4) { /* open doorway */ } else { /* door is open for the player */ } B_.push([X - 3.2, Z - 4.1, X - 5.0, Z - 1.9]); /* bed */ }
-  if (HS.stage >= 5) { B_.push([X + 1.7, Z - 4.1, X + 5.9, Z - 3.0]); B_.push([X + 5.2, Z - 0.7, X + 5.9, Z + 1.3]); B_.push([X - 0.9, Z + 0.1, X + 1.3, Z + 1.7]); }
+  const B_ = []; const hw = HW / 2, hd = HD / 2, t = 0.5, X = WR.hx, Z = WR.hz; if (HS.stage >= 2) { B_.push([X - hw - t / 2, Z - hd - t / 2, X + hw + t / 2, Z - hd + t / 2]); B_.push([X - hw - t / 2, Z - hd, X - hw + t / 2, Z + hd]); B_.push([X + hw - t / 2, Z - hd, X + hw + t / 2, Z + hd]); B_.push([X - hw - t / 2, Z + hd - t / 2, X - 1.0, Z + hd + t / 2]); B_.push([X + 1.0, Z + hd - t / 2, X + hw + t / 2, Z + hd + t / 2]); if (HS.stage < 4) { /* open doorway */ } else { /* door is open for the player */ } }
+  if (HS.stage >= 4) { B_.push([X - 5.7, Z - 4.18, X - 3.4, Z - 1.1]); B_.push([X - 3.35, Z - 4.18, X - 2.65, Z - 3.5]); B_.push([X - 5.7, Z + 1.5, X - 4.8, Z + 3.3]); B_.push([X + 1.35, Z + 3.4, X + 2.45, Z + 4.0]); B_.push([X - 2.7, Z + 3.45, X - 2.1, Z + 4.0]); B_.push([X - 2.0, Z + 3.65, X - 1.6, Z + 4.05]); }
+  if (HS.stage >= 5) { B_.push([X + 0.95, Z - 4.18, X + 5.68, Z - 3.35]); B_.push([X - 1.45, Z - 0.4, X + 0.85, Z + 1.0]); B_.push([X + 4.7, Z + 1.4, X + 5.7, Z + 3.7]); B_.push([X + 2.85, Z + 2.0, X + 3.95, Z + 3.1]); B_.push([X + 3.2, Z + 0.9, X + 3.8, Z + 1.5]); B_.push([X - 2.75, Z - 4.18, X - 1.05, Z - 3.75]); }
   if (HS.stage >= 7) { const FX = 14, Z0 = Z - 11, Z1 = Z + 12; B_.push([X - FX - 0.2, Z0 - 0.2, X + FX + 0.2, Z0 + 0.2]); B_.push([X - FX - 0.2, Z0, X - FX + 0.2, Z1]); B_.push([X + FX - 0.2, Z0, X + FX + 0.2, Z1]); B_.push([X - FX, Z1 - 0.2, X - 1.6, Z1 + 0.2]); B_.push([X + 1.6, Z1 - 0.2, X + FX, Z1 + 0.2]); }
   return B_;
 }
@@ -512,9 +583,9 @@ function startBuild(stage) { HS.stage = stage; HS.anim = { stage, t: 0, dur: sta
 function setHouseStageInstant(stage) { HS.stage = stage; HS.anim = null; }
 
 /* ====== DATA: resources, food, tools, recipes ====== */
-const RES = { wood: ['🪵', 'Drewno'], plank: ['🟫', 'Deski'], stone: ['🪨', 'Kamień'], brick: ['🧱', 'Cegły'], iron: ['⛓️', 'Żelazo'], coal: ['⬛', 'Węgiel'], clothL: ['👕', 'Lekki strój'], clothW: ['🧥', 'Ciepły strój'], hotdrink: ['🍵', 'Gorący napar'], clothH: ['🥻', 'Wiosenny strój'], clothA: ['🧣', 'Jesienny strój'], clothM: ['🌿', 'Strój moro'], bag: ['🎒', 'Większy plecak'], torch: ['🔦', 'Pochodnie'], berry: ['🫐', 'Jagody'], mushroom: ['🍄', 'Grzyby'], fish: ['🐟', 'Surowa ryba'], fishC: ['🍤', 'Pieczona ryba'], meat: ['🥩', 'Surowe mięso'], meatC: ['🍖', 'Pieczone mięso'], veg: ['🥕', 'Warzywa'], stew: ['🍲', 'Gulasz'], journal: ['📔', 'Dziennik zwiadowcy'] };
+const RES = { wood: ['🪵', 'Drewno'], plank: ['🟫', 'Deski'], stone: ['🪨', 'Kamień'], brick: ['🧱', 'Cegły'], iron: ['⛓️', 'Żelazo'], coal: ['⬛', 'Węgiel'], clothL: ['👕', 'Lekki strój'], clothW: ['🧥', 'Ciepły strój'], hotdrink: ['🍵', 'Gorący napar'], fiber: ['🌾', 'Włókna'], rope: ['➰', 'Lina'], cell: ['🔋', 'Ogniwo'], medkit: ['🩹', 'Apteczka'], clothH: ['🥻', 'Wiosenny strój'], clothA: ['🧣', 'Jesienny strój'], clothM: ['🌿', 'Strój moro'], bag: ['🎒', 'Większy plecak'], torch: ['🔥', 'Pochodnie'], berry: ['🫐', 'Jagody'], mushroom: ['🍄', 'Grzyby'], fish: ['🐟', 'Surowa ryba'], fishC: ['🍤', 'Pieczona ryba'], meat: ['🥩', 'Surowe mięso'], meatC: ['🍖', 'Pieczone mięso'], veg: ['🥕', 'Warzywa'], stew: ['🍲', 'Gulasz'], journal: ['📔', 'Dziennik zwiadowcy'] };
 const FOODV = { berry: 8, mushroom: 6, fish: 10, fishC: 30, meat: 12, meatC: 36, veg: 14, stew: 58, hotdrink: 24 };
-const TOOLN = { axe: ['Siekiera', ['', 'drewniana', 'kamienna', 'żelazna'], '🪓'], pick: ['Kilof', ['', 'drewniany', 'kamienny', 'żelazny'], '⛏️'], rod: ['Wędka', ['', 'zwykła'], '🎣'], spear: ['Włócznia', ['', 'drewniana'], '🔱'] };
+const TOOLN = { flash: ['Latarka', ['', 'zwykła'], '🔦'], fire: ['Krzesiwo', ['', 'zwykłe'], '✨'], compass: ['Kompas', ['', 'zwykły'], '🧭'], axe: ['Siekiera', ['', 'drewniana', 'kamienna', 'żelazna'], '🪓'], pick: ['Kilof', ['', 'drewniany', 'kamienny', 'żelazny'], '⛏️'], rod: ['Wędka', ['', 'zwykła'], '🎣'], spear: ['Włócznia', ['', 'drewniana'], '🔱'] };
 const TOOLP = { axe: [1, 2, 3.2, 4.6], pick: [0, 2, 3.4, 5], spear: [0, 26] }; // power per tier
 const RCP = [
   { id: 'plank', o: ['plank', 2], i: { wood: 1 }, t: 'Deski z drewna' }, { id: 'brick', o: ['brick', 2], i: { stone: 2, coal: 1 }, t: 'Cegły z kamienia i węgla' }, { id: 'torch', o: ['torch', 2], i: { wood: 1, coal: 1 }, t: 'Pochodnia (świeci 3 min)' },
@@ -526,7 +597,13 @@ const RCP = [
   { id: 'clothH', o: ['clothH', 1], i: { plank: 2, veg: 2 }, t: 'Wiosenny strój — lekki, barwiony warzywami' },
   { id: 'clothA', o: ['clothA', 1], i: { plank: 3, wood: 2, mushroom: 1 }, t: 'Jesienny strój — wełniany, na chłodne dni' },
   { id: 'clothM', o: ['clothM', 1], i: { plank: 3, veg: 2, mushroom: 2 }, t: 'Strój moro — wilki i zwierzęta widzą cię z bliska 🌿' },
-  { id: 'bag', o: ['bag', 1], i: { plank: 8, iron: 2, wood: 4 }, t: 'Większy plecak: +80 miejsca na surowce (max 2)' }
+  { id: 'bag', o: ['bag', 1], i: { plank: 8, iron: 2, rope: 2 }, t: 'Większy plecak: +80 miejsca na surowce (max 2)' },
+  { id: 'rope', o: ['rope', 1], i: { fiber: 3 }, t: 'Lina z włókien: pozwala wspinać się po stromych zboczach' },
+  { id: 'cell', o: ['cell', 2], i: { iron: 1, coal: 1 }, t: 'Ogniwa do latarki (2 szt.)' },
+  { id: 'flash', tool: ['flash', 1], i: { iron: 3, plank: 1, cell: 1 }, t: 'Latarka (L): jasny snop światła, zużywa ogniwa' },
+  { id: 'fire', tool: ['fire', 1], i: { stone: 2, iron: 1 }, t: 'Krzesiwo (G): rozpalisz ognisko gdziekolwiek za 3 drewna' },
+  { id: 'compass', tool: ['compass', 1], i: { iron: 2, coal: 1, plank: 1 }, t: 'Kompas: strzałka na ekranie wskazuje drogę do domu' },
+  { id: 'medkit', o: ['medkit', 1], i: { fiber: 2, berry: 2, plank: 1 }, t: 'Apteczka: leczy 45 zdrowia (plecak, zakładka Jedzenie)' }
 ];
 const COOK = [{ id: 'fishC', from: 'fish', t: 'Upiecz rybę' }, { id: 'meatC', from: 'meat', t: 'Upiecz mięso' }, { id: 'stew', i: { meat: 1, veg: 1, mushroom: 1 }, t: 'Ugotuj gulasz (kuchnia w domu)', need: 5, kitchen: true },
   { id: 'hotdrink', i: { berry: 2 }, t: 'Gorący napar z jagód — szybko ogrzewa' }];
@@ -539,7 +616,7 @@ function spawnChips(x, y, z, col, n) { for (let i = 0; i < n; i++) PARTS.push({ 
 function updateParts(dt) { for (let i = PARTS.length - 1; i >= 0; i--) { const p = PARTS[i]; p.life -= dt; if (p.life <= 0) { PARTS.splice(i, 1); continue; } p.vy -= p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.g > 0) { const gy = heightAt(p.x, p.z); if (p.y < gy) { p.y = gy; p.vy *= -0.3; p.vx *= 0.6; p.vz *= 0.6; } } } if (PARTS.length > 400) PARTS.splice(0, PARTS.length - 400); }
 function drawParts() { for (const p of PARTS) { const a = Math.min(1, p.life * 2); const m = [1, 0, 0, p.x, 0, 1, 0, p.y, 0, 0, 1, p.z]; const db = p.e ? dynE : dynO; db.box(m, p.s, p.s, p.s, p.c, p.e || 0); } }
 function addFire(x, y, z, big) { const f = { x, y, z, big: !!big, ph: Math.random() * 6 }; FIRES.push(f); return f; }
-function drawFires(t) { for (const f of FIRES) { const dx = f.x - cam.x, dz = f.z - cam.z; if (dx * dx + dz * dz > 120 * 120) continue; const fl = 0.8 + 0.2 * Math.sin(t * 11 + f.ph) + 0.1 * Math.sin(t * 23 + f.ph * 2); for (let i = 0; i < 3; i++) { const h = (0.45 + i * 0.15) * fl * (f.big ? 1.3 : 1), w = (0.2 - i * 0.05) * (f.big ? 1.3 : 1); const m = mm(MT(f.x + Math.sin(t * 9 + i + f.ph) * 0.05, f.y + h / 2, f.z + Math.cos(t * 7 + i) * 0.05), MRY(t * 2 + i)); dynO.box(m, w, h / 2, w, i === 0 ? [1, 0.45, 0.1] : i === 1 ? [1, 0.7, 0.15] : [1, 0.95, 0.5], 1); } if (Math.random() < dtG * 6) PARTS.push({ x: f.x + (Math.random() - 0.5) * 0.3, y: f.y + 0.4, z: f.z + (Math.random() - 0.5) * 0.3, vx: (Math.random() - 0.5) * 0.3, vy: 1.2 + Math.random(), vz: (Math.random() - 0.5) * 0.3, life: 1.1, s: 0.06, c: [1, 0.7, 0.2], g: -0.2, e: 0 }); LIGHTS.push({ x: f.x, y: f.y + 0.8, z: f.z, rad: f.big ? 22 : 15, k: 0.7 + 0.5 * SKYST.night + 0.1 * Math.sin(t * 13 + f.ph) }); } }
+function drawFires(t) { for (const f of FIRES) { if (f.temp) drawFireBase(f); const dx = f.x - cam.x, dz = f.z - cam.z; if (dx * dx + dz * dz > 120 * 120) continue; const fl = 0.8 + 0.2 * Math.sin(t * 11 + f.ph) + 0.1 * Math.sin(t * 23 + f.ph * 2); for (let i = 0; i < 3; i++) { const h = (0.45 + i * 0.15) * fl * (f.big ? 1.3 : 1), w = (0.2 - i * 0.05) * (f.big ? 1.3 : 1); const m = mm(MT(f.x + Math.sin(t * 9 + i + f.ph) * 0.05, f.y + h / 2, f.z + Math.cos(t * 7 + i) * 0.05), MRY(t * 2 + i)); dynO.box(m, w, h / 2, w, i === 0 ? [1, 0.45, 0.1] : i === 1 ? [1, 0.7, 0.15] : [1, 0.95, 0.5], 1); } if (Math.random() < dtG * 6) PARTS.push({ x: f.x + (Math.random() - 0.5) * 0.3, y: f.y + 0.4, z: f.z + (Math.random() - 0.5) * 0.3, vx: (Math.random() - 0.5) * 0.3, vy: 1.2 + Math.random(), vz: (Math.random() - 0.5) * 0.3, life: 1.1, s: 0.06, c: [1, 0.7, 0.2], g: -0.2, e: 0 }); LIGHTS.push({ x: f.x, y: f.y + 0.8, z: f.z, rad: f.big ? 22 : 15, k: 0.7 + 0.5 * SKYST.night + 0.1 * Math.sin(t * 13 + f.ph) }); } }
 let dtG = 0.016;
 /* ----- humanoid model: identical to the Bow Shot character ----- */
 const OUTFITS = { clothW: { shirt: [0.78, 0.2, 0.2], arms: [0.78, 0.2, 0.2], pants: [0.25, 0.25, 0.32], big: 1, scarf: [0.95, 0.95, 0.98], hat: 'beanie' }, clothL: { shirt: [0.98, 0.95, 0.72], arms: null, pants: [0.35, 0.65, 0.9], shorts: 1, hat: 'straw' }, clothH: { shirt: [0.5, 0.82, 0.5], arms: [0.5, 0.82, 0.5], pants: [0.2, 0.3, 0.5], flower: 1 }, clothA: { shirt: [0.85, 0.5, 0.18], arms: [0.85, 0.5, 0.18], pants: [0.4, 0.28, 0.18], scarf: [0.7, 0.2, 0.15] }, clothM: { shirt: [0.33, 0.42, 0.22], arms: [0.33, 0.42, 0.22], pants: [0.3, 0.38, 0.2], camo: 1, hat: 'cap' } };
@@ -566,7 +643,7 @@ function drawHuman(x, y, z, yaw, anim, o) {
   }
   box(-0.12, 1.82, 0.26, 0.08, 0.12, 0.02, BS_EYE, 0.3); box(0.12, 1.82, 0.26, 0.08, 0.12, 0.02, BS_EYE, 0.3); box(0, 1.68, 0.26, 0.22, 0.05, 0.02, BS_EYE, 0.3);
   if (o.tool) { const T_ = o.tool, hc = [0.5, 0.34, 0.18], m2 = mm(armR, mm(MT(0, -0.62, 0.22), MRX(0.75))); const th = (hx, hy, hz, ox, oy, oz, c, e) => dynO.box(mm(m2, MT(ox, oy, oz)), hx, hy, hz, c, e || 0, k);
-    if (T_ === 'axe') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.17, 0.2, 0, 0.5, 0.1, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'pick') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.06, 0.34, 0, 0.55, 0, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'rod') { th(0.025, 0.7, 0.025, 0, 0.3, 0.1, hc); } else if (T_ === 'spear') { th(0.03, 0.85, 0.03, 0, 0.35, 0, hc); th(0.05, 0.14, 0.05, 0, 1.2, 0, [0.85, 0.85, 0.9]); } else if (T_ === 'torch') { th(0.035, 0.32, 0.035, 0, 0.15, 0, hc); th(0.08, 0.1, 0.08, 0, 0.5, 0, [1, 0.62, 0.15], 1); } }
+    if (T_ === 'axe') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.17, 0.2, 0, 0.5, 0.1, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'pick') { th(0.035, 0.42, 0.035, 0, 0.2, 0, hc); th(0.05, 0.06, 0.34, 0, 0.55, 0, o.head || [0.7, 0.7, 0.74]); } else if (T_ === 'rod') { th(0.025, 0.7, 0.025, 0, 0.3, 0.1, hc); } else if (T_ === 'spear') { th(0.03, 0.85, 0.03, 0, 0.35, 0, hc); th(0.05, 0.14, 0.05, 0, 1.2, 0, [0.85, 0.85, 0.9]); } else if (T_ === 'flash') { th(0.06, 0.2, 0.06, 0, 0.22, 0, [0.22, 0.22, 0.27]); th(0.075, 0.05, 0.075, 0, 0.46, 0, [1, 0.96, 0.7], 1); } else if (T_ === 'torch') { th(0.035, 0.32, 0.035, 0, 0.15, 0, hc); th(0.08, 0.1, 0.08, 0, 0.5, 0, [1, 0.62, 0.15], 1); } }
 }
 function blobShadow(x, z, r, y) { const gy = (y !== undefined ? y : heightAt(x, z)) + 0.06; const P = []; for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; P.push([x + Math.cos(a) * r, gy, z + Math.sin(a) * r]); } for (let i = 1; i < 7; i++) { dynE.v(P[0][0], P[0][1], P[0][2], 0, 1, 0, 0, 0, 0, 0); dynE.v(P[i][0], P[i][1], P[i][2], 0, 1, 0, 0, 0, 0, 0); dynE.v(P[i + 1][0], P[i + 1][1], P[i + 1][2], 0, 1, 0, 0, 0, 0, 0); } }
 /* ----- animals ----- */
@@ -590,7 +667,7 @@ let wolfT = 3;
 function updateWolves(dt) {
   const night = SKYST.night > 0.45 && !G.peaceful; wolfT -= dt; if (night && wolfT <= 0 && WOLVES.length < (currentSeason() === 3 ? 6 : currentSeason() === 1 ? 3 : 4) && !P.dead) { wolfT = 5 + Math.random() * 6; for (let tr = 0; tr < 8; tr++) { const a = Math.random() * 6.28, d = 34 + Math.random() * 18, x = P.x + Math.cos(a) * d, z = P.z + Math.sin(a) * d; const h = heightAt(x, z); if (h < WR.waterY + 0.6 || h > 14 || Math.hypot(x, z) > WR.R - 12 || safeZone(x, z) || slopeAt(x, z) > 0.7) continue; spawnWolf(x, z); break; } }
   for (let i = WOLVES.length - 1; i >= 0; i--) { const w = WOLVES[i]; const dx = P.x - w.x, dz = P.z - w.z, d = Math.hypot(dx, dz); w.atk = Math.max(0, w.atk - dt); w.hurt = Math.max(0, w.hurt - dt); w.howl -= dt; if (!night && SKYST.night < 0.3 || d > 90 || P.dead) { w.fleeing = true; } if (w.fleeing && d > 60) { WOLVES.splice(i, 1); continue; }
-    const torchR = P.torchOn ? 9 : 0, protectedP = safeZone(P.x, P.z) || nearFire(P.x, P.z, 10) || (torchR && d < torchR); let wx = 0, wz = 0, sp = 6.0;
+    const torchR = P.torchOn ? 9 : P.flashOn ? 7 : 0, protectedP = safeZone(P.x, P.z) || nearFire(P.x, P.z, 10) || (torchR && d < torchR); let wx = 0, wz = 0, sp = 6.0;
     if (w.fleeing) { const l = d || 1; wx = -dx / l; wz = -dz / l; sp = 7; } else if (d < (P.worn === 'clothM' && P.inv.clothM > 0 ? 22 : 36) && !protectedP) { const l = d || 1; wx = dx / l; wz = dz / l; if (d < 1.7 && w.atk <= 0) { w.atk = 1.1; hurtPlayer(9, w); sfx.bite(); } if (d < 1.4) { wx = wz = 0; } } else if (protectedP && d < 22) { // circle at a distance
       w.ang += dt * 0.7; const tx = P.x + Math.cos(w.ang) * 17, tz = P.z + Math.sin(w.ang) * 17; const l = Math.hypot(tx - w.x, tz - w.z) || 1; wx = (tx - w.x) / l; wz = (tz - w.z) / l; sp = 4.4; } else { w.ang += dt * 0.3; wx = Math.cos(w.ang) * 0.3; wz = Math.sin(w.ang) * 0.3; sp = 1.6; }
     if (w.kb > 0) { w.kb -= dt; wx = -dx / (d || 1); wz = -dz / (d || 1); sp = 9; } if (wx || wz) w.yaw = Math.atan2(wx, wz); w.vx += (wx * sp - w.vx) * Math.min(1, dt * 8); w.vz += (wz * sp - w.vz) * Math.min(1, dt * 8); let nx = w.x + w.vx * dt, nz = w.z + w.vz * dt; if (heightAt(nx, nz) < WR.waterY - 0.2) { nx = w.x; nz = w.z; } nearCols(nx, nz, 2, c => { const ddx = nx - c.x, ddz = nz - c.z, dd = Math.hypot(ddx, ddz), rr = c.r + 0.5; if (dd < rr && dd > 0.001) { nx = c.x + ddx / dd * rr; nz = c.z + ddz / dd * rr; } }); w.x = nx; w.z = nz; w.y += (heightAt(w.x, w.z) - w.y) * Math.min(1, dt * 14); w.anim += Math.hypot(w.vx, w.vz) * dt * 2.4;
@@ -640,7 +717,7 @@ function resolveMove(nx, nz, r) {
   for (const b of houseBoxes()) { const cx = clamp(nx, b[0], b[2]), cz = clamp(nz, b[1], b[3]), dx = nx - cx, dz = nz - cz, d = Math.hypot(dx, dz); if (d < r) { if (d > 0.0001) { nx = cx + dx / d * r; nz = cz + dz / d * r; } else { const l = nx - b[0], rr = b[2] - nx, t = nz - b[1], bt = b[3] - nz, m = Math.min(l, rr, t, bt); if (m === l) nx = b[0] - r; else if (m === rr) nx = b[2] + r; else if (m === t) nz = b[1] - r; else nz = b[3] + r; } } }
   return [nx, nz];
 }
-function blockedTerrain(x, z, fx, fz) { if (Math.hypot(x, z) > WR.R - 8) return true; if (pierY(x, z) !== null) return false; if (inLakeDeep(x, z)) return true; if (houseFloorY(x, z) !== null) return false; return slopeAt(x, z) > 1.1 && heightAt(x, z) > heightAt(fx, fz) - 0.05; }
+function blockedTerrain(x, z, fx, fz) { if (Math.hypot(x, z) > WR.R - 8) return true; if (pierY(x, z) !== null) return false; if (inLakeDeep(x, z)) return true; if (houseFloorY(x, z) !== null) return false; return slopeAt(x, z) > ((P.inv.rope || 0) > 0 ? 1.9 : 1.1) && heightAt(x, z) > heightAt(fx, fz) - 0.05; }
 /* ----- update ----- */
 function updatePlayer(dt) {
   const ui = G.ui || G.paused || P.dead || P.sleeping > 0; const t = P.anim;
@@ -658,6 +735,7 @@ function updatePlayer(dt) {
   const spd = Math.hypot(mx, mz) / Math.max(dt, 1e-4); t.speed += (clamp(spd / 5, 0, 1.3) - t.speed) * Math.min(1, dt * 12); t.t += dt * (0.55 + spd * 0.2); if (P.onGround && spd > 1.5) { P.stepD = (P.stepD || 0) + spd * dt; if (P.stepD > 2.4) { P.stepD = 0; sfx.step(); } }
   if (P.swingT > 0) { P.swingT = Math.max(0, P.swingT - dt * 2.6); t.swing = P.swingT; } else t.swing = 0; P.swingCd = Math.max(0, P.swingCd - dt); P.hurtT = Math.max(0, P.hurtT - dt);
   // camera
+  if (HS.stage >= 3 && houseInside(P.x, P.z) && !P.fp) P.cp = Math.min(P.cp, -0.78);
   const hy = P.y + (P.fp ? 1.85 : 1.9), dist = P.fp ? 0.0 : P.dist; const R = M4.rot(P.cy, P.cp); const cxp = P.x - R.f[0] * dist, cyp = hy - R.f[1] * dist, czp = P.z - R.f[2] * dist; let cy2 = cyp; const gh = heightAt(cxp, czp) + 0.7; if (cy2 < gh) cy2 = gh; cam.x = cxp; cam.y = cy2; cam.z = czp; cam.yaw = P.cy; cam.pitch = P.cp + (cy2 > cyp ? Math.atan2(cy2 - cyp, Math.max(dist, 1)) * 0.5 : 0); cam.fov = SET.fov + (P.sprint ? 5 : 0);
   if (shakeT > 0 && SET.shake) { shakeT -= dt; cam.x += (Math.random() - 0.5) * 0.15 * shakeT * 3; cam.y += (Math.random() - 0.5) * 0.15 * shakeT * 3; } else shakeT = 0;
 }
@@ -667,7 +745,7 @@ function survivalTick(dt) {
   if (P.torchOn) { P.torchT -= dt; if (P.torchT <= 0) { if ((P.inv.torch || 0) > 0) { P.inv.torch--; P.torchT = 180; refreshHud(); } else { P.torchOn = false; toast('Pochodnia dogasła.'); } } }
   if (P.sleeping > 0) { P.sleeping += dt; if (P.sleeping > 1.8 && !P.slept) { P.slept = true; G.wasNight = false; G.dayT = 0.015; G.day++; P.hp = 100; P.hunger = Math.max(15, P.hunger - 12); WOLVES.length = 0; G.stats.nights = (G.stats.nights || 0) + 1; G.stats.slept = (G.stats.slept || 0) + 1; } if (P.sleeping > 3.6) { P.sleeping = 0; P.slept = false; G.wasNight = false; } }
   if (G.wasNight === false && SKYST.night > 0.7) G.wasNight = true; if (G.wasNight && SKYST.night < 0.15 && !P.slept) { G.wasNight = false; G.stats.nights = (G.stats.nights || 0) + 1; toast('Przeżyłeś noc! 🌅'); }
-  updateTemperature(dt);
+  updateTemperature(dt); updateFires(dt); updateFlash(dt);
   if (P.torchOn) LIGHTS.push({ x: P.x, y: P.y + 1.6, z: P.z, rad: 14, k: 1.0 + 0.1 * Math.sin(glTime * 14) });
 }
 /* ----- interaction: gather, fight, interact ----- */
@@ -676,9 +754,9 @@ function findTarget() {
   const F = [Math.sin(P.yaw), Math.cos(P.yaw)]; let best = null, bs = 1e9; const consider = (kind, ref, x, z, maxd, y) => { const dx = x - P.x, dz = z - P.z, d = Math.hypot(dx, dz); if (d > maxd) return; const dot = d > 0.01 ? (dx * F[0] + dz * F[1]) / d : 1; if (dot < 0.2 && d > 1.8) return; const sc = d - dot * 1.4; if (sc < bs) { bs = sc; best = { kind, ref, x, z, d }; } };
   for (const w of WOLVES) consider('wolf', w, w.x, w.z, 3.0); for (const a of ANIMALS) consider('animal', a, a.x, a.z, 2.8);
   for (const nd of INTER) { if (!nd.alive) continue; consider('node', nd, nd.x, nd.z, 2.7 + (NT[nd.type].r || 0.5)); }
-  consider('bench', null, WR.hx - 9, WR.hz + 8, 3.0); consider('stash', null, WR.hx - 5.5, WR.hz + 10, 3.2); consider('sign', null, WR.hx + 4.2, WR.hz + 7.6, 3.2); consider('fire', FIRES[0], WR.hx + 9, WR.hz + 8, 3.2);
+  consider('bench', null, WR.hx - 9, WR.hz + 8, 3.0); consider('stash', null, WR.hx - 5.5, WR.hz + 10, 3.2); for (const f of FIRES) if (f.temp) consider('fire', f, f.x, f.z, 3.0); consider('sign', null, WR.hx + 4.2, WR.hz + 7.6, 3.2); consider('fire', FIRES[0], WR.hx + 9, WR.hz + 8, 3.2);
   for (const c of CAMPS) { if (c.chest) consider('chest', c, c.chest.x, c.chest.z, 3.0); consider('fire', c.fire, c.x, c.z, 3.0); }
-  if (HS.stage >= 4) consider('bed', null, WR.hx - 4.1, WR.hz - 2.8, 3.2); if (HS.stage >= 5) consider('fire', 'kitchen', WR.hx + 3.8, WR.hz - 3.2, 3.4); if (HS.stage >= 7) consider('garden', null, WR.hx - 10, WR.hz + 4.6, 4.2);
+  if (HS.stage >= 4) consider('bed', null, WR.hx - 4.4, WR.hz - 2.6, 3.4); if (HS.stage >= 5) consider('fire', 'kitchen', WR.hx + 3.8, WR.hz - 3.2, 3.4); if (HS.stage >= 7) consider('garden', null, WR.hx - 10, WR.hz + 4.6, 4.2);
   if (FISHSPOT && P.tools.rod) { const d = Math.hypot(P.x - FISHSPOT.x, P.z - FISHSPOT.z); if (d < 3.6) { bs = -5; best = { kind: 'fish', ref: null, x: FISHSPOT.x, z: FISHSPOT.z, d }; } } else if (FISHSPOT && Math.hypot(P.x - FISHSPOT.x, P.z - FISHSPOT.z) < 3.6) { bs = -4; best = { kind: 'fishnorod', ref: null, x: FISHSPOT.x, z: FISHSPOT.z, d: 0 }; }
   return best;
 }
@@ -692,10 +770,10 @@ function promptFor(t) {
 function gather(nd) { { const T0 = NT[nd.type]; if (BULK.indexOf(T0.res) >= 0 && capLeft() <= 0) { toast('🎒 Plecak pełny! Odłóż rzeczy do skrzyni przy domu (E).'); sfx.click(); P.swingCd = 0.4; return; } }
   const T_ = NT[nd.type]; if (T_.tool === 'pick' && P.tools.pick < T_.req) { toast(T_.name + ': potrzebny ' + (T_.req === 2 ? 'kamienny kilof (zrób przy stole)' : 'lepszy kilof')); sfx.click(); P.swingCd = 0.4; return; }
   const power = T_.tool === 'axe' ? TOOLP.axe[P.tools.axe] : TOOLP.pick[P.tools.pick]; P.sel = T_.tool; P.swingT = 1; P.swingCd = 0.52; nd.hp -= power; nd.shake = 0.5; const hy = nd.tree ? 1.2 : 0.8; spawnChips(nd.x, nd.y + hy, nd.z, nd.tree ? [0.55, 0.38, 0.2] : [0.6, 0.6, 0.62], 6); if (T_.tool === 'axe') sfx.chop(); else sfx.mine();
-  if (nd.hp <= 0) { nd.alive = false; nd.fall = 0; nd.respawn = nd.tree ? 360 : 420; if (nd.col) { nd.col.r = 0.01; } const tier = T_.tool === 'axe' ? P.tools.axe : P.tools.pick; const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0) + (tier - 1); addRes(T_.res, n, true); G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] = (G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] || 0) + 1; if (nd.tree && Math.random() < 0.25) addRes('berry', 1, true); spawnDust(nd.x, nd.y + 0.3, nd.z, 6); if (nd.tree) sfx.fall(); nodeSetRebuild(nd.set); if (nd.tree) nodeSetRebuild(nd.set); }
+  if (nd.hp <= 0) { nd.alive = false; nd.fall = 0; nd.respawn = nd.tree ? 360 : 420; if (nd.col) { nd.col.r = 0.01; } const tier = T_.tool === 'axe' ? P.tools.axe : P.tools.pick; const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0) + (tier - 1); addRes(T_.res, n, true); G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] = (G.stats[nd.type === 'oak' || nd.type === 'pine' ? 'trees' : nd.type] || 0) + 1; if (nd.tree && Math.random() < 0.25) addRes('berry', 1, true); if (nd.tree && Math.random() < 0.45) addRes('fiber', 1 + ((Math.random() * 2) | 0), true); spawnDust(nd.x, nd.y + 0.3, nd.z, 6); if (nd.tree) sfx.fall(); nodeSetRebuild(nd.set); if (nd.tree) nodeSetRebuild(nd.set); }
   else nodeSetRebuild(nd.set);
 }
-function pickSimple(nd) { const T_ = NT[nd.type]; if (nd.type === 'bush' && currentSeason() === 3) { toast('❄️ Zimą krzaki nie mają jagód.'); return; } if (nd.type === 'mush' && (currentSeason() === 1 || currentSeason() === 3)) { toast('🍄 Grzyby rosną wiosną i jesienią.'); return; } const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0); addRes(T_.res, n, true); nd.alive = false; nd.regrow = T_.regrow; sfx.pickup(); G.stats[nd.type] = (G.stats[nd.type] || 0) + 1; nodeSetRebuild(nd.set); }
+function pickSimple(nd) { const T_ = NT[nd.type]; if (nd.type === 'bush' && currentSeason() === 3) { toast('❄️ Zimą krzaki nie mają jagód.'); return; } if (nd.type === 'mush' && (currentSeason() === 1 || currentSeason() === 3)) { toast('🍄 Grzyby rosną wiosną i jesienią.'); return; } const n = T_.n[0] + ((Math.random() * (T_.n[1] - T_.n[0] + 1)) | 0); addRes(T_.res, n, true); if (nd.type === 'bush') addRes('fiber', 1 + ((Math.random() * 2) | 0), true); nd.alive = false; nd.regrow = T_.regrow; sfx.pickup(); G.stats[nd.type] = (G.stats[nd.type] || 0) + 1; nodeSetRebuild(nd.set); }
 function doAction() {
   if (G.ui || G.paused || P.dead || P.sleeping > 0 || P.swingCd > 0) return; const t = TARGET; if (P.fish) { return; }
   if (t && t.kind === 'wolf') { P.swingT = 1; P.swingCd = 0.55; P.sel = P.tools.spear ? 'spear' : 'axe'; attackWolf(t.ref, weaponDmg()); return; } if (t && t.kind === 'animal') { P.swingT = 1; P.swingCd = 0.55; P.sel = P.tools.spear ? 'spear' : 'axe'; attackAnimal(t.ref, weaponDmg()); return; }
@@ -771,12 +849,12 @@ function questTick(dt) {
 function toast(msg, ms) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; const box = $('toasts'); box.appendChild(t); while (box.children.length > 4) box.removeChild(box.firstChild); setTimeout(() => t.remove(), ms || 2800); }
 let bigT = 0; function bigToast(h, p) { const b = $('big'); b.querySelector('h1').textContent = h; b.querySelector('p').textContent = p; b.classList.add('on'); clearTimeout(bigT); bigT = setTimeout(() => b.classList.remove('on'), 3400); }
 function logPickup(k, n) { const box = $('picks'); const d = document.createElement('div'); d.textContent = '+' + n + ' ' + RES[k][0] + ' ' + RES[k][1]; box.appendChild(d); while (box.children.length > 5) box.removeChild(box.firstChild); setTimeout(() => d.remove(), 2200); }
-const TOOLB = [['axe', '🪓', '1'], ['pick', '⛏️', '2'], ['rod', '🎣', '3'], ['spear', '🔱', '4'], ['torch', '🔥', 'Q']];
-function buildTools() { const t = $('tools'); t.innerHTML = ''; TOOLB.forEach(tb => { const el = document.createElement('div'); el.className = 'tl'; el.dataset.k = tb[0]; el.innerHTML = tb[1] + '<em>' + tb[2] + '</em><small></small>'; el.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (tb[0] === 'torch') toggleTorch(); else if (tb[0] === 'rod' || P.tools[tb[0]]) { P.sel = tb[0]; sfx.click(); } else toast('Zrób to narzędzie przy stole warsztatowym.'); refreshHud(); }); t.appendChild(el); }); }
+const TOOLB = [['axe', '🪓', '1'], ['pick', '⛏️', '2'], ['rod', '🎣', '3'], ['spear', '🔱', '4'], ['torch', '🔥', 'Q'], ['flash', '🔦', 'L'], ['fire', '✨', 'G']];
+function buildTools() { const t = $('tools'); t.innerHTML = ''; TOOLB.forEach(tb => { const el = document.createElement('div'); el.className = 'tl'; el.dataset.k = tb[0]; el.innerHTML = tb[1] + '<em>' + tb[2] + '</em><small></small>'; el.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (tb[0] === 'torch') toggleTorch(); else if (tb[0] === 'flash') toggleFlash(); else if (tb[0] === 'fire') useFireStarter(); else if (tb[0] === 'rod' || P.tools[tb[0]]) { P.sel = tb[0]; sfx.click(); } else toast('Zrób to narzędzie przy stole warsztatowym.'); refreshHud(); }); t.appendChild(el); }); }
 function toggleTorch() { if (P.torchOn) { P.torchOn = false; return; } if ((P.inv.torch || 0) <= 0) { toast('Zrób pochodnie przy stole (drewno + węgiel).'); return; } P.torchOn = true; P.torchT = Math.max(P.torchT, 0.01); toast('Pochodnia zapalona! Wilki boją się światła.'); sfx.click(); }
 function refreshHud() {
   let h = ''; for (const k of ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew']) { const n = P.inv[k] || 0; if (n > 0 || k === 'wood' || k === 'stone') h += '<span title="' + RES[k][1] + '">' + RES[k][0] + ' ' + n + '</span>'; } if ((P.inv.journal || 0) > 0) h += '<span>📔 ' + P.inv.journal + '</span>'; h = '<span title="Plecak: zajęte / maks" style="' + (capLeft() <= 8 ? 'border-color:#f66' : '') + '">🎒 ' + capUsed() + '/' + capMax() + '</span>' + h; const r = $('res'); if (r && r._h !== h) { r._h = h; r.innerHTML = h; }
-  document.querySelectorAll('#tools .tl').forEach(el => { const k = el.dataset.k; const own = k === 'torch' ? (P.inv.torch || 0) > 0 || P.torchOn : k === 'rod' ? P.tools.rod > 0 : P.tools[k] > 0; el.classList.toggle('off', !own); el.classList.toggle('sel', k === 'torch' ? P.torchOn : P.sel === k); const sm = el.querySelector('small'); sm.textContent = k === 'torch' ? (P.inv.torch || 0) : (k === 'axe' || k === 'pick') ? ['', 'I', 'II', 'III'][P.tools[k]] : ''; });
+  document.querySelectorAll('#tools .tl').forEach(el => { const k = el.dataset.k; const own = k === 'torch' ? (P.inv.torch || 0) > 0 || P.torchOn : k === 'rod' ? P.tools.rod > 0 : P.tools[k] > 0; el.classList.toggle('off', !own); el.classList.toggle('sel', k === 'torch' ? P.torchOn : k === 'flash' ? !!P.flashOn : P.sel === k); const sm = el.querySelector('small'); sm.textContent = k === 'torch' ? (P.inv.torch || 0) : k === 'flash' ? Math.round(P.flashE || 0) + '%' : (k === 'axe' || k === 'pick') ? ['', 'I', 'II', 'III'][P.tools[k]] : ''; });
 }
 let qSig = '', qA = 0, sigB = '';
 function updateHUD(dt) {
@@ -808,7 +886,7 @@ const mainTabs = cur => [{ t: '🎒 Plecak', on: cur === 'inv', f: openInv }, { 
 function openBench() {
   G.ui = 'bench'; showPanel(); const bd = winShell('Stół warsztatowy', mainTabs('bench')); let h = '<div class="lbl">WYTWARZANIE</div>';
   RCP.forEach((r, i) => { const owned = (r.tool && P.tools[r.tool[0]] >= r.tool[1]) || (r.id === 'bag' && (P.inv.bag || 0) >= 2), locked = r.need && HS.stage < r.need, can = !owned && !locked && hasAll(P.inv, r.i); const outN = r.tool ? (TOOLN[r.tool[0]][0] + ' ' + (TOOLN[r.tool[0]][1][r.tool[1]] || '')) : RES[r.o[0]][1] + ' ×' + r.o[1]; h += '<div class="stage ' + (owned ? 'done' : '') + '"><div class="tx"><b>' + (r.tool ? TOOLN[r.tool[0]][2] + ' ' : RES[r.o[0]][0] + ' ') + outN + '</b>' + r.t + '<div>' + costHtml(r.i) + (locked ? '<span class="cost no">🔒 Piętro (etap ' + r.need + ')</span>' : '') + '</div></div><div class="btn sm green" data-i="' + i + '" ' + (can ? '' : 'disabled') + '>' + (owned ? 'Masz' : 'Zrób') + '</div></div>'; });
-  bd.innerHTML = h; bd.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const r = RCP[+b.dataset.i]; if (!takeRes(r.i)) return; if (r.tool) { P.tools[r.tool[0]] = r.tool[1]; P.sel = r.tool[0]; G.stats['crafted_' + r.id] = 1; toast('Stworzono: ' + TOOLN[r.tool[0]][2] + ' ' + TOOLN[r.tool[0]][0] + ' ' + TOOLN[r.tool[0]][1][r.tool[1]]); } else { addRes(r.o[0], r.o[1], true, true); G.stats['crafted_' + r.o[0]] = (G.stats['crafted_' + r.o[0]] || 0) + r.o[1]; } sfx.craft(); refreshHud(); openBench(); });
+  bd.innerHTML = h; bd.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const r = RCP[+b.dataset.i]; if (!takeRes(r.i)) return; if (r.tool) { P.tools[r.tool[0]] = r.tool[1]; if (r.tool[0] === 'flash') P.flashE = 100; if (['axe', 'pick', 'rod', 'spear'].indexOf(r.tool[0]) >= 0) P.sel = r.tool[0]; G.stats['crafted_' + r.id] = 1; toast('Stworzono: ' + TOOLN[r.tool[0]][2] + ' ' + TOOLN[r.tool[0]][0] + ' ' + TOOLN[r.tool[0]][1][r.tool[1]]); } else { addRes(r.o[0], r.o[1], true, true); G.stats['crafted_' + r.o[0]] = (G.stats['crafted_' + r.o[0]] || 0) + r.o[1]; } sfx.craft(); refreshHud(); openBench(); });
 }
 function openHouse() {
   G.ui = 'house'; showPanel(); const bd = winShell('Plac budowy: dom', mainTabs('house')); let h = '<div style="margin-bottom:8px;font-size:13px;color:#d8c8a8">Dom rośnie etapami: każdy ulepszony etap pojawia się na działce i daje nowe możliwości. Do budowy liczą się też surowce ze skrzyni.</div>';
@@ -820,20 +898,20 @@ function openCook(kitchen) {
   COOK.forEach((c, i) => { const locked = (c.need && HS.stage < c.need) || (c.kitchen && !kitchen), cost = c.i || { [c.from]: 1 }; const can = !locked && hasAll(P.inv, cost); h += '<div class="stage"><div class="tx"><b>' + RES[c.id][0] + ' ' + RES[c.id][1] + ' (+' + FOODV[c.id] + ' sytości)</b>' + c.t + '<div>' + costHtml(cost) + (locked ? '<span class="cost no">🔒 ' + (c.kitchen && !kitchen ? 'tylko w kuchni' : 'etap ' + c.need) + '</span>' : '') + '</div></div><div class="btn sm green" data-i="' + i + '" ' + (can ? '' : 'disabled') + '>Zrób</div></div>'; });
   bd.innerHTML = h; bd.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const c = COOK[+b.dataset.i]; if (!takeRes(c.i || { [c.from]: 1 })) return; addRes(c.id, 1, true); sfx.craft(); G.stats.cooked = (G.stats.cooked || 0) + 1; openCook(kitchen); });
 }
-function eatItem(k) { if (!(P.inv[k] > 0)) return; if (P.hunger >= 99) { toast('Nie jesteś głodny.'); return; } P.inv[k]--; P.hunger = Math.min(100, P.hunger + FOODV[k]); if (k === 'stew') P.hp = Math.min(100, P.hp + 30); if (k === 'hotdrink') P.temp = Math.min(35, (P.temp || 20) + 15); else if (k === 'fishC' || k === 'meatC') P.hp = Math.min(100, P.hp + 10); sfx.eat(); refreshHud(); G.stats.eaten = (G.stats.eaten || 0) + 1; }
+function eatItem(k) { if (k === 'medkit') { if (!(P.inv.medkit > 0)) return; if (P.hp >= 100) { toast('Masz pełne zdrowie.'); return; } P.inv.medkit--; P.hp = Math.min(100, P.hp + 45); sfx.eat(); toast('🩹 Uleczono 45 zdrowia'); refreshHud(); return; } if (!(P.inv[k] > 0)) return; if (P.hunger >= 99) { toast('Nie jesteś głodny.'); return; } P.inv[k]--; P.hunger = Math.min(100, P.hunger + FOODV[k]); if (k === 'stew') P.hp = Math.min(100, P.hp + 30); if (k === 'hotdrink') P.temp = Math.min(35, (P.temp || 20) + 15); else if (k === 'fishC' || k === 'meatC') P.hp = Math.min(100, P.hp + 10); sfx.eat(); refreshHud(); G.stats.eaten = (G.stats.eaten || 0) + 1; }
 function openInv() {
   G.ui = 'inv'; showPanel(); const bd = winShell('Plecak', mainTabs('inv'));
   const tabs = ['Zasoby','Jedzenie','Ubrania','Narzędzia']; let active = openInv._tab || 0;
   let h = '<div id="inv-tabs">' + tabs.map((t,i) => '<div class="inv-tab' + (i===active?' on':'') + '" data-tab="' + i + '">' + t + '</div>').join('') + '</div>';
   if (active === 0) {
     h += '<div class="lbl">PLECAK ' + capUsed() + '/' + capMax() + ' (surowce)</div><div class="row2">';
-    for (const k in RES) { if (!(P.inv[k] > 0) || k in FOODV || k.indexOf('cloth') === 0 || k === 'journal') continue; h += '<span class="cost" style="font-size:15px">' + RES[k][0] + ' ' + RES[k][1] + ': ' + P.inv[k] + '</span>'; }
+    for (const k in RES) { if (!(P.inv[k] > 0) || k in FOODV || k.indexOf('cloth') === 0 || k === 'journal' || k === 'medkit') continue; h += '<span class="cost" style="font-size:15px">' + RES[k][0] + ' ' + RES[k][1] + ': ' + P.inv[k] + '</span>'; }
     if ((P.inv.journal || 0) > 0) h += '<span class="cost" style="font-size:15px">📔 Dziennik: ' + P.inv.journal + '</span>';
     h += '</div><div style="font-size:12px;color:#c8b898;margin-top:8px">Pełny plecak? Odłóż rzeczy do skrzyni przy domu (E). Większy plecak zrobisz przy stole.</div>';
   } else if (active === 1) {
     const s = currentSeason ? currentSeason() : 0; h += '<div class="lbl">JEDZENIE · sytość ' + Math.round(P.hunger) + '% · temp ' + (Math.round(P.temp||20)) + '°C</div>';
     for (const k in FOODV) { if (!(P.inv[k] > 0)) continue; h += '<div class="stage"><div class="tx"><b>' + RES[k][0] + ' ' + RES[k][1] + ' ×' + P.inv[k] + '</b>+' + FOODV[k] + ' sytości' + (k==='stew'?', +30 zdrowia':'') + (k==='hotdrink'?' +ogrzewa 🔥':'') + '</div><div class="btn sm green" data-e="' + k + '">Zjedz</div></div>'; }
-  } else if (active === 2) {
+  if ((P.inv.medkit || 0) > 0) h += '<div class="stage"><div class="tx"><b>🩹 Apteczka ×' + P.inv.medkit + '</b>+45 zdrowia</div><div class="btn sm green" data-e="medkit">Użyj</div></div>'; } else if (active === 2) {
     const s = currentSeason ? currentSeason() : 0;
     h += '<div class="lbl">UBRANIA · pora roku: ' + SEASON_ICO[s] + ' ' + SEASONS[s] + '</div>';
     const clothes = [{k:'clothW', n:'🧥 Ciepły strój', bonus:'+16°C zimą, +12°C jesienią', best:[3]}, {k:'clothA', n:'🧣 Jesienny strój', bonus:'+12°C jesienią, +8°C zimą', best:[2]}, {k:'clothH', n:'🥻 Wiosenny strój', bonus:'+8°C wiosną', best:[0]}, {k:'clothL', n:'👕 Lekki strój', bonus:'+10°C latem (chłodzi)', best:[1]}, {k:'clothM', n:'🌿 Strój moro', bonus:'+3 do +7°C, wilki i zwierzęta widzą cię z bliska', best:[]}];
@@ -903,7 +981,7 @@ function showTitle() {
   let h = '<div class="worlds">'; if (L.length) L.forEach(w => { h += '<div class="wrow"><div class="nm">' + esc(w.name) + '<small>dom: etap ' + (w.stage || 0) + '/7 · dzień ' + (w.day || 1) + (w.lvl ? ' · poz. ' + w.lvl : '') + '</small></div><div class="btn sm green" data-p="' + w.id + '">Graj</div><div class="btn sm red" data-d="' + w.id + '">🗑</div></div>'; }); else h += '<div style="text-align:center;margin:10px;color:#dfeccf">Brak światów. Stwórz pierwszy!</div>'; h += '</div><button class="btn green" id="tNew">＋ Nowy świat</button><div style="display:flex;gap:8px"><button class="btn" id="tHow">❓ Jak grać</button><button class="btn" id="tSet">⚙ Ustawienia</button></div>'; tm.innerHTML = h;
   tm.querySelectorAll('[data-p]').forEach(b => b.onclick = () => startGame(L.find(w => w.id === b.dataset.p), false)); tm.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { if (confirm('Usunąć ten świat na zawsze?')) { LS.del('bh2_w_' + b.dataset.d); LS.set('bh2_worlds', worldList().filter(w => w.id !== b.dataset.d)); showTitle(); } }); $('tNew').onclick = () => { audioInit(); sfx.click(); newWorldDialog(); }; $('tSet').onclick = () => { audioInit(); openSettings(false); }; $('tHow').onclick = () => { audioInit(); openHow(); };
 }
-function openHow() { $('panel').classList.remove('hide'); const bd = winShell('Jak grać', null); bd.innerHTML = '<div style="font-size:14px;line-height:1.55"><b style="color:#ffd84a">Cel:</b> zbuduj dom w 7 etapach (fundament, ściany, dach, drzwi i okna, wnętrze, piętro, ogród), zbieraj surowce w lesie i przetrwaj noce. Wykonuj misje i wyprawy do obozów!<br><br><b style="color:#ffd84a">Komputer:</b> WASD ruch · Shift bieg · Spacja skok · mysz kamera (kliknij w okno) · LPM akcja (ścinaj, kop, walcz) · E użyj (stół, tablica budowy, ognisko, skrzynia, łóżko) · 1–4 narzędzia · Q pochodnia · F zjedz · I plecak · J misje · V widok z oczu · Esc pauza.<br><br><b style="color:#ffd84a">Telefon:</b> lewy joystick ruch · przeciągnij po ekranie, by obracać kamerę · ⚒ akcja · ✋ użyj · ⬆ skok · 🏃 bieg.<br><br><b style="color:#ffd84a">Pory roku i ciepło:</b> co 5 dni zmienia się pora roku. Pilnuj paska temperatury: ognisko, dom i ubranie (ciepły, jesienny, wiosenny, lekki lub moro) chronią przed zimnem i upałem. Plecak ma limit, więc zostawiaj rzeczy w skrzyni przy domu.<br><br><b style="color:#ffd84a">Wskazówki:</b> przy stole warsztatowym zrobisz deski, cegły, pochodnie, wędkę, włócznię i lepsze narzędzia · tablica budowy stoi przed domem · żelazo jest w górach · w nocy zostań przy ognisku albo w domu z drzwiami · wilki boją się pochodni.</div>'; }
+function openHow() { $('panel').classList.remove('hide'); const bd = winShell('Jak grać', null); bd.innerHTML = '<div style="font-size:14px;line-height:1.55"><b style="color:#ffd84a">Cel:</b> zbuduj dom w 7 etapach (fundament, ściany, dach, drzwi i okna, wnętrze, piętro, ogród), zbieraj surowce w lesie i przetrwaj noce. Wykonuj misje i wyprawy do obozów!<br><br><b style="color:#ffd84a">Komputer:</b> WASD ruch · Shift bieg · Spacja skok · mysz kamera (kliknij w okno) · LPM akcja (ścinaj, kop, walcz) · E użyj (stół, tablica budowy, ognisko, skrzynia, łóżko) · 1–4 narzędzia · Q pochodnia · F zjedz · I plecak · J misje · V widok z oczu · Esc pauza.<br><br><b style="color:#ffd84a">Telefon:</b> lewy joystick ruch · przeciągnij po ekranie, by obracać kamerę · ⚒ akcja · ✋ użyj · ⬆ skok · 🏃 bieg.<br><br><b style="color:#ffd84a">Pory roku i ciepło:</b> co 5 dni zmienia się pora roku. Pilnuj paska temperatury: ognisko, dom i ubranie (ciepły, jesienny, wiosenny, lekki lub moro) chronią przed zimnem i upałem. Plecak ma limit, więc zostawiaj rzeczy w skrzyni przy domu.<br><br><b style="color:#ffd84a">Sprzęt survivalowy:</b> przy stole zrobisz krzesiwo (G, ognisko gdziekolwiek za 3 drewna), latarkę (L, zużywa ogniwa), linę z włókien (wspinaczka po stromych zboczach), kompas (strzałka do domu) i apteczkę. Włókna zbierasz z drzew i krzaków. Gdy wejdziesz do domu, dach znika, żeby było widać wnętrze.<br><br><b style="color:#ffd84a">Wskazówki:</b> przy stole warsztatowym zrobisz deski, cegły, pochodnie, wędkę, włócznię i lepsze narzędzia · tablica budowy stoi przed domem · żelazo jest w górach · w nocy zostań przy ognisku albo w domu z drzwiami · wilki boją się pochodni.</div>'; }
 function openSettings(fromGame) {
   $('panel').classList.remove('hide'); const bd = winShell('Ustawienia', null); const x = bd.parentNode.querySelector('.btn.red'); x.onclick = () => { saveSettings(); if (fromGame) pauseGame(false); else hidePanel(); };
   const row = (id, lbl, min, max, step, val, fmt) => '<div class="set"><label>' + lbl + ' <span id="' + id + 'v">' + fmt(val) + '</span></label><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"></div>';
@@ -989,7 +1067,7 @@ function drawSeasonParts(dt, t) {
     const m = [1, 0, 0, px, 0, 1, 0, py, 0, 0, 1, pz]; if (snow) dynO.box(m, 0.045 * q.s, 0.045 * q.s, 0.045 * q.s, [1, 1, 1], 0.4, 1); else { const c = q.h < 0.4 ? [0.95, 0.55, 0.12] : q.h < 0.75 ? [0.8, 0.22, 0.1] : [0.92, 0.78, 0.2]; dynO.box(mm(m, MRY(t + q.p)), 0.09, 0.015, 0.06, c, 0.2, 1); }
   }
 }
-const STASHABLE = ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew', 'hotdrink', 'clothL', 'clothW', 'clothH', 'clothA', 'clothM'];
+const STASHABLE = ['wood', 'plank', 'stone', 'brick', 'iron', 'coal', 'fiber', 'rope', 'cell', 'medkit', 'torch', 'berry', 'mushroom', 'fish', 'fishC', 'meat', 'meatC', 'veg', 'stew', 'hotdrink', 'clothL', 'clothW', 'clothH', 'clothA', 'clothM'];
 function moveStash(k, n, toStash) {
   if (toStash) { n = Math.min(n, P.inv[k] || 0); if (n <= 0) return; P.inv[k] -= n; G.stash[k] = (G.stash[k] || 0) + n; }
   else { n = Math.min(n, G.stash[k] || 0); if (BULK.indexOf(k) >= 0) n = Math.min(n, capLeft()); if (n <= 0) { if (BULK.indexOf(k) >= 0) toast('🎒 Plecak pełny!'); return; } G.stash[k] -= n; P.inv[k] = (P.inv[k] || 0) + n; }
@@ -1009,6 +1087,40 @@ function openStash() {
 }
 const SEA_HINT = ['🌸 Wiosna! Jagody i grzyby znów rosną.', '☀️ Lato! Upał męczy: lekki strój i woda pomagają.', '🍂 Jesień! Chłodniej: zrób jesienny lub ciepły strój.', '❄️ Zima! Mróz: ciepły strój, ognisko i dom ratują życie.'];
 
+
+/* ====== SURVIVAL GEAR: flashlight, fire starter, compass ====== */
+function toggleFlash() {
+  if (!P.tools.flash) { toast('Zrób latarkę przy stole (żelazo, deski, ogniwo).'); return; }
+  if (P.flashOn) { P.flashOn = false; sfx.click(); refreshHud(); return; }
+  if ((P.flashE || 0) <= 0) { if ((P.inv.cell || 0) > 0) { P.inv.cell--; P.flashE = 100; } else { toast('🔋 Brak ogniw! Zrób ogniwa przy stole.'); return; } }
+  P.flashOn = true; sfx.click(); refreshHud();
+}
+function updateFlash(dt) {
+  if (!P.flashOn) return; P.flashE -= dt * 0.35;
+  if (P.flashE <= 0) { P.flashE = 0; if ((P.inv.cell || 0) > 0) { P.inv.cell--; P.flashE = 100; toast('🔋 Wymieniono ogniwo.'); refreshHud(); } else { P.flashOn = false; toast('🔋 Latarka zgasła: skończyły się ogniwa.'); refreshHud(); return; } }
+  LIGHTS.push({ x: P.x + Math.sin(P.yaw) * 4.5, y: P.y + 1.5, z: P.z + Math.cos(P.yaw) * 4.5, rad: 19, k: 1.25 }); LIGHTS.push({ x: P.x, y: P.y + 1.8, z: P.z, rad: 6, k: 0.6 });
+}
+function useFireStarter() {
+  if (!P.tools.fire) { toast('Zrób krzesiwo przy stole (kamień + żelazo).'); return; }
+  if (G.ui || G.paused || P.dead || P.sleeping > 0) return;
+  if (houseInside(P.x, P.z)) { toast('W domu nie rozpalaj ogniska! Tam jest kominek.'); return; }
+  if (P.wade || inLakeDeep(P.x, P.z)) { toast('Nie rozpalisz ogniska w wodzie.'); return; }
+  if (nearFire(P.x, P.z, 3)) { toast('Tu już płonie ognisko.'); return; }
+  if ((P.inv.wood || 0) < 3) { toast('Potrzebujesz 3 sztuk drewna na ognisko.'); return; }
+  P.inv.wood -= 3; const fx = P.x + Math.sin(P.yaw) * 1.6, fz = P.z + Math.cos(P.yaw) * 1.6; const f = addFire(fx, heightAt(fx, fz) + 0.5, fz, false); f.temp = true; f.ttl = 270;
+  const mine = FIRES.filter(q => q.temp); if (mine.length > 3) FIRES.splice(FIRES.indexOf(mine[0]), 1);
+  spawnChips(fx, f.y, fz, [1, 0.8, 0.3], 14); sfx.craft(); P.swingT = 1; G.stats.fires = (G.stats.fires || 0) + 1; toast('🔥 Ognisko rozpalone na 4,5 minuty. Grzeje i odstrasza wilki!'); refreshHud();
+}
+function updateFires(dt) { for (let i = FIRES.length - 1; i >= 0; i--) { const f = FIRES[i]; if (!f.temp) continue; f.ttl -= dt; if (f.ttl <= 0) { FIRES.splice(i, 1); toast('Ognisko wygasło.'); } } }
+function drawFireBase(f) { for (let i = 0; i < 3; i++) dynO.box(mm(MT(f.x, f.y - 0.38, f.z), MRY(i * 1.05 + 0.3)), 0.42, 0.07, 0.07, [0.4, 0.27, 0.15], 0, 1); for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; dynO.box(mm(MT(f.x + Math.cos(a) * 0.6, f.y - 0.4, f.z + Math.sin(a) * 0.6), MRY(-a)), 0.16, 0.1, 0.12, [0.5 + 0.05 * (i % 2), 0.5, 0.52], 0, 1); } }
+function updateCompass() {
+  let el = document.getElementById('compass');
+  if (!P.tools.compass || G.state !== 'play') { if (el) el.style.display = 'none'; return; }
+  if (!el) { el = document.createElement('div'); el.id = 'compass'; el.innerHTML = '<i></i><span></span>'; document.getElementById('hud').appendChild(el); }
+  el.style.display = 'flex'; const dx = WR.hx - P.x, dz = (WR.hz + 12) - P.z, fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+  const ang = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz) * 180 / Math.PI; el.firstChild.style.transform = 'rotate(' + ang.toFixed(0) + 'deg)'; const d = Math.round(Math.hypot(dx, dz)); if (el._d !== d) { el._d = d; el.lastChild.textContent = 'Dom ' + d + ' m'; }
+}
+
 /* ====== MAIN LOOP, INPUT, BOOT ====== */
 let lastT = 0, fpsA = 0, fpsN = 0, titleT = 0;
 const dayFactor = t => t < 0.55 ? 1 : t < 0.68 ? 1 - (t - 0.55) / 0.13 : t < 0.92 ? 0 : (t - 0.92) / 0.08;
@@ -1019,7 +1131,7 @@ function updateSky(dt) {
   updateSeason(); LIGHT.sunI *= SEA.sun; for (let c = 0; c < 3; c++) SKYST.fog[c] = clamp(SKYST.fog[c] + SEA.fog[c] * f, 0, 1);
 }
 function drawPlayer() {
-  if (P.fp && !P.dead) return; const tier = k => P.tools[k] || 1; const hc = [[0, 0, 0], [0.62, 0.46, 0.26], [0.6, 0.6, 0.63], [0.86, 0.86, 0.92]]; let tool = P.fish ? 'rod' : P.torchOn ? 'torch' : P.sel; if (tool !== 'torch' && tool !== 'rod' && !P.tools[tool]) tool = 'axe'; const head = (tool === 'axe' || tool === 'pick') ? hc[tier(tool)] : null;
+  if (P.fp && !P.dead) return; const tier = k => P.tools[k] || 1; const hc = [[0, 0, 0], [0.62, 0.46, 0.26], [0.6, 0.6, 0.63], [0.86, 0.86, 0.92]]; let tool = P.fish ? 'rod' : P.torchOn ? 'torch' : P.flashOn ? 'flash' : P.sel; if (tool !== 'torch' && tool !== 'rod' && !P.tools[tool]) tool = 'axe'; const head = (tool === 'axe' || tool === 'pick') ? hc[tier(tool)] : null;
   const y = P.sleeping > 0.1 ? P.y - 0.0 : P.y; drawHuman(P.x, y, P.z, P.yaw, P.anim, { tool, head, outfit: (P.worn && P.inv[P.worn] > 0) ? P.worn : null, shade: P.hurtT > 0 ? 1.4 : 1 }); blobShadow(P.x, P.z, 0.55, P.y);
   if (P.fish) { const f = P.fish; const hx = P.x + Math.sin(P.yaw) * 0.9, hz = P.z + Math.cos(P.yaw) * 0.9, hy = P.y + 1.9; const by = WR.waterY + 0.05 + (f.bite > 0 ? Math.sin(glTime * 30) * 0.06 - 0.08 : Math.sin(glTime * 2) * 0.02); const m = [1, 0, 0, f.x, 0, 1, 0, by, 0, 0, 1, f.z]; dynO.box(m, 0.09, 0.09, 0.09, [0.95, 0.2, 0.2], 0.3); dynO.box([1, 0, 0, f.x, 0, 1, 0, by + 0.1, 0, 0, 1, f.z], 0.06, 0.06, 0.06, [1, 1, 1], 0.3); for (let i = 1; i < 10; i++) { const u = i / 10, x = lerp(hx, f.x, u), z = lerp(hz, f.z, u), yy = lerp(hy, by, u) - Math.sin(u * 3.14) * 0.9; dynO.box([1, 0, 0, x, 0, 1, 0, yy, 0, 0, 1, z], 0.015, 0.015, 0.015, [0.95, 0.95, 0.9], 0); } }
 }
@@ -1032,7 +1144,7 @@ function frame(now) {
   if (sim) { updateSky(P.sleeping > 0 ? dt * 0.3 : dt); G.time += dt; if (G.gardenT > 0) G.gardenT -= dt; }
   if (sim) { updatePlayer(dt); if (!P.dead) survivalTick(dt); updateFishing(dt); updateWolves(dt); updateAnimals(dt); updateNodes(dt); updateParts(dt); updateHouse(dt); questTick(dt); musicTick(dt); }
   if (run && !P.dead) { TARGET = findTarget(); P.prompt = promptFor(TARGET); if (act.act) doAction(); } else { TARGET = null; P.prompt = null; }
-  drawPlayer(); drawTargetMarker(t); drawAnimals(); drawWolves(); drawFires(t); drawParts(); drawSeasonParts(dt, t); updateClouds(dt); sortLights(); SHC.x = P.x; SHC.y = P.y; SHC.z = P.z; renderScene(dt, t); updateHUD(dt);
+  drawPlayer(); drawTargetMarker(t); drawAnimals(); drawWolves(); drawFires(t); drawParts(); drawSeasonParts(dt, t); updateClouds(dt); sortLights(); SHC.x = P.x; SHC.y = P.y; SHC.z = P.z; renderScene(dt, t); updateHUD(dt); updateCompass();
   if (sim && performance.now() - G.lastSave > 45000) { G.lastSave = performance.now(); saveGame(true); }
 }
 function sortLights() { LIGHTS.sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z)); if (LIGHTS.length > 8) LIGHTS.length = 8; }
@@ -1040,7 +1152,7 @@ function sortLights() { LIGHTS.sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.
 addEventListener('keydown', e => {
   if (G.state !== 'play') return; if (['Space', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault(); if (e.repeat) return; K[e.code] = true;
   if (G.ui) { if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI' || e.code === 'KeyJ') closeUI(); return; } if (G.paused || P.dead) return;
-  if (e.code === 'KeyE') interact(); if (e.code === 'KeyI') openInv(); if (e.code === 'KeyJ') openQuests(); if (e.code === 'Escape') pauseGame(true); if (e.code === 'KeyV') P.fp = !P.fp; if (e.code === 'KeyQ') toggleTorch(); if (e.code === 'F3') { G.debug = !G.debug; e.preventDefault(); }
+  if (e.code === 'KeyE') interact(); if (e.code === 'KeyI') openInv(); if (e.code === 'KeyJ') openQuests(); if (e.code === 'Escape') pauseGame(true); if (e.code === 'KeyV') P.fp = !P.fp; if (e.code === 'KeyQ') toggleTorch(); if (e.code === 'KeyL') toggleFlash(); if (e.code === 'KeyG') useFireStarter(); if (e.code === 'F3') { G.debug = !G.debug; e.preventDefault(); }
   if (e.code === 'KeyF') { for (const k of ['stew', 'meatC', 'fishC', 'veg', 'berry', 'mushroom', 'meat', 'fish']) if (P.inv[k] > 0) { eatItem(k); break; } }
   const tk = { Digit1: 'axe', Digit2: 'pick', Digit3: 'rod', Digit4: 'spear' }[e.code]; if (tk) { if (P.tools[tk]) { P.sel = tk; sfx.click(); refreshHud(); } else toast('Zrób to narzędzie przy stole.'); }
 });
@@ -1050,7 +1162,7 @@ addEventListener('wheel', e => { if (G.state === 'play' && !G.ui && !G.paused) P
 addEventListener('mousedown', e => { if (G.state !== 'play' || G.ui || G.paused || P.dead) return; if (!locked && !isTouch) { lockPointer(); return; } if (e.button === 0) act.act = true; else if (e.button === 2) interact(); });
 addEventListener('mouseup', e => { if (e.button === 0) act.act = false; }); addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === cvs; if (!locked && G.state === 'play' && !G.ui && !G.paused && !isTouch && !P.dead) pauseGame(true); });
-function sizeHud() { const w = innerWidth, h = innerHeight; let ts = Math.min(58, (w - 24) / 6.6); if (h < 480) ts = Math.min(ts, 42); document.documentElement.style.setProperty('--ts', Math.max(34, Math.floor(ts)) + 'px'); }
+function sizeHud() { const w = innerWidth, h = innerHeight; let ts = Math.min(58, (w - 24) / 8.7); if (h < 480) ts = Math.min(ts, 42); document.documentElement.style.setProperty('--ts', Math.max(34, Math.floor(ts)) + 'px'); }
 function boot() {
   isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0; cvs = $('gl'); if (!glInit(cvs)) { $('loadmsg').textContent = 'Twoja przeglądarka nie obsługuje WebGL2.'; return; }
   buildNodeMeshes(); buildClouds(); buildTools(); if (isTouch) setupTouch(); sizeHud(); addEventListener('resize', sizeHud); initTitle(); showTitle(); $('loading').style.display = 'none'; requestAnimationFrame(frame);
